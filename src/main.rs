@@ -144,7 +144,7 @@ impl HGKLetter {
                 }                
             },
             //HGKDiacritics::UNDERDOT => { },
-            _ => return false
+            _ => false
         }
     }
 }
@@ -155,26 +155,28 @@ fn toggle_diacritic_str(l:&str, d:HGKDiacritics, on_only:bool) -> String {
     for (i, c) in l.nfd().enumerate() {
         if i == 0 {
             if unicode_normalization::char::is_combining_mark(c) {
-                assert!(false, "First char of letter is a combining mark??");
+                assert!(false, "First char of letter is a combining mark.");
             }
         }
         else {
             if !unicode_normalization::char::is_combining_mark(c) {
                 break;
             }
-        }
-        match c {
-            '\u{0300}' => diacritics |= HGKDiacritics::GRAVE,
-            '\u{0301}' => diacritics |= HGKDiacritics::ACUTE,
-            '\u{0304}' => diacritics |= HGKDiacritics::MACRON,
-            '\u{0306}' => diacritics |= HGKDiacritics::BREVE,
-            '\u{0308}' => diacritics |= HGKDiacritics::DIAERESIS,
-            '\u{0313}' => diacritics |= HGKDiacritics::SMOOTH,
-            '\u{0314}' => diacritics |= HGKDiacritics::ROUGH,
-            '\u{0323}' => diacritics |= HGKDiacritics::UNDERDOT,
-            '\u{0342}' => diacritics |= HGKDiacritics::CIRCUMFLEX,
-            '\u{0345}' => diacritics |= HGKDiacritics::IOTA_SUBSCRIPT,
-            _ => ()
+            else {
+                match c {
+                    '\u{0300}' => diacritics |= HGKDiacritics::GRAVE,
+                    '\u{0301}' => diacritics |= HGKDiacritics::ACUTE,
+                    '\u{0304}' => diacritics |= HGKDiacritics::MACRON,
+                    '\u{0306}' => diacritics |= HGKDiacritics::BREVE,
+                    '\u{0308}' => diacritics |= HGKDiacritics::DIAERESIS,
+                    '\u{0313}' => diacritics |= HGKDiacritics::SMOOTH,
+                    '\u{0314}' => diacritics |= HGKDiacritics::ROUGH,
+                    '\u{0323}' => diacritics |= HGKDiacritics::UNDERDOT,
+                    '\u{0342}' => diacritics |= HGKDiacritics::CIRCUMFLEX,
+                    '\u{0345}' => diacritics |= HGKDiacritics::IOTA_SUBSCRIPT,
+                    _ => ()
+                }
+            }
         }
     }
     let mut l = HGKLetter { letter: l.chars().nth(0).unwrap(), diacritics: diacritics };
@@ -186,6 +188,7 @@ fn main() {
 
     let s = "ἄβί".to_string();
     let a = s.nfd();
+    //assert_eq!(a, vec!['\u{03B1}', '\u{0313}', '\u{0301}', '\u{03B2}', '\u{03B9}', '\u{0301}']);
     println!("blah {}", a.count() );
 
     let mut s: HGKLetter = HGKLetter { letter: 'α', diacritics: HGKDiacritics::ACUTE | HGKDiacritics::GRAVE };
