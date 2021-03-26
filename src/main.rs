@@ -259,66 +259,75 @@ fn toggle_diacritic_str(l:&str, d:HGKDiacritics, on_only:bool, mode:HGKUnicode_M
 
 fn main() {
 
-    let s = "ἄβί".to_string();
-    let a = s.nfd();
-    assert_eq!(a.count(), 6);
+}
 
-    assert_eq!('α'.is_long_or_short(), true);
-    assert_eq!('ι'.is_long_or_short(), true);
-    assert_eq!('υ'.is_long_or_short(), true);
-    assert_eq!('η'.is_long(), true);
-    assert_eq!('ω'.is_long(), true);
-    assert_eq!('ε'.is_short(), true);
-    assert_eq!('ο'.is_short(), true);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn mytest() {
+        let s = "ἄβί".to_string();
+        let a = s.nfd();
+        assert_eq!(a.count(), 6);
 
-    let a2 = HGKLetter::from_str("\u{03B1}\u{0301}");
-    assert_eq!(a2.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
-    assert_eq!(a2.letter, '\u{03B1}');
-    let a3 = HGKLetter::from_str("\u{03AC}");
-    assert_eq!(a3.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
-    assert_eq!(a3.letter, '\u{03B1}');
+        assert_eq!('α'.is_long_or_short(), true);
+        assert_eq!('ι'.is_long_or_short(), true);
+        assert_eq!('υ'.is_long_or_short(), true);
+        assert_eq!('η'.is_long(), true);
+        assert_eq!('ω'.is_long(), true);
+        assert_eq!('ε'.is_short(), true);
+        assert_eq!('ο'.is_short(), true);
 
-    let mut s: HGKLetter = HGKLetter { letter: 'α', diacritics: HGKDiacritics::ACUTE | HGKDiacritics::GRAVE };
-    assert_eq!(s.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
-    assert_ne!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
+        let a2 = HGKLetter::from_str("\u{03B1}\u{0301}");
+        assert_eq!(a2.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
+        assert_eq!(a2.letter, '\u{03B1}');
+        let a3 = HGKLetter::from_str("\u{03AC}");
+        assert_eq!(a3.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
+        assert_eq!(a3.letter, '\u{03B1}');
 
-    s.toggle_diacritic(HGKDiacritics::CIRCUMFLEX, true);
-    assert_eq!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
-    //don't toggle off, if on_only is set
-    s.toggle_diacritic(HGKDiacritics::CIRCUMFLEX, true);
-    assert_eq!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
-    //turn off
-    s.toggle_diacritic(HGKDiacritics::CIRCUMFLEX, false);
-    assert_ne!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
+        let mut s: HGKLetter = HGKLetter { letter: 'α', diacritics: HGKDiacritics::ACUTE | HGKDiacritics::GRAVE };
+        assert_eq!(s.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
+        assert_ne!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
 
-    assert_eq!(compose('A','\u{30a}'), Some('Å'));
+        s.toggle_diacritic(HGKDiacritics::CIRCUMFLEX, true);
+        assert_eq!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
+        //don't toggle off, if on_only is set
+        s.toggle_diacritic(HGKDiacritics::CIRCUMFLEX, true);
+        assert_eq!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
+        //turn off
+        s.toggle_diacritic(HGKDiacritics::CIRCUMFLEX, false);
+        assert_ne!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
 
-    let s = "ÅΩ";
-    let c = s.nfc().collect::<String>();
-    assert_eq!(c, "ÅΩ");
+        assert_eq!(compose('A','\u{30a}'), Some('Å'));
 
-	assert_eq!(compose('\u{03B1}','\u{0301}'), Some('\u{03AC}'));
-	assert_eq!(compose('\u{03B1}','\u{0301}'), Some('\u{03AC}'));
-	assert_eq!('a','a');
+        let s = "ÅΩ";
+        let c = s.nfc().collect::<String>();
+        assert_eq!(c, "ÅΩ");
 
-    let a = "\u{03B1}\u{0301}";
-    let b = "\u{03AC}";
-    assert_ne!(a, b);
+    	assert_eq!(compose('\u{03B1}','\u{0301}'), Some('\u{03AC}'));
+    	assert_eq!(compose('\u{03B1}','\u{0301}'), Some('\u{03AC}'));
+    	assert_eq!('a','a');
 
-    let s = String::from("ἄ");
-    let v: Vec<char> = s.chars().collect();
+        let a = "\u{03B1}\u{0301}";
+        let b = "\u{03AC}";
+        assert_ne!(a, b);
 
-    let a4 = toggle_diacritic_str("α", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::Precomposed);
-    assert_eq!(a4, "\u{03AC}");//ά");
-    let a6 = toggle_diacritic_str("ὰ", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::Precomposed);
-    assert_eq!(a6, "\u{03AC}");//ά");
-    let a5 = toggle_diacritic_str("α", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::CombiningOnly);
-    assert_eq!(a5, "\u{03B1}\u{0301}");
-    let a7 = toggle_diacritic_str("α", HGKDiacritics::CIRCUMFLEX, false, HGKUnicode_Mode::CombiningOnly);
-    assert_eq!(a7, "\u{03B1}\u{0342}");
-    let a8 = toggle_diacritic_str("α", HGKDiacritics::CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
-    assert_eq!(a8, "\u{1FB6}");
+        let s = String::from("ἄ");
+        let v: Vec<char> = s.chars().collect();
 
-    let a9 = toggle_diacritic_str("ε", HGKDiacritics::CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
-    assert_eq!(a9, "ε");
+        let a4 = toggle_diacritic_str("α", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::Precomposed);
+        assert_eq!(a4, "\u{03AC}");//ά");
+        let a6 = toggle_diacritic_str("ὰ", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::Precomposed);
+        assert_eq!(a6, "\u{03AC}");//ά");
+        let a5 = toggle_diacritic_str("α", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::CombiningOnly);
+        assert_eq!(a5, "\u{03B1}\u{0301}");
+        let a7 = toggle_diacritic_str("α", HGKDiacritics::CIRCUMFLEX, false, HGKUnicode_Mode::CombiningOnly);
+        assert_eq!(a7, "\u{03B1}\u{0342}");
+        let a8 = toggle_diacritic_str("α", HGKDiacritics::CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
+        assert_eq!(a8, "\u{1FB6}");
+
+        let a9 = toggle_diacritic_str("ε", HGKDiacritics::CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
+        assert_eq!(a9, "ε");
+    }
 }
