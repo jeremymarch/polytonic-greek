@@ -6,6 +6,15 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# compile: https://dev.to/dandyvica/wasm-in-rust-without-nodejs-2e0c
+# cargo build --target wasm32-unknown-unknown
+# cd target/wasm32-unknown-unknown/debug/
+# wasm-bindgen --target web --no-typescript --out-dir . hoplitekb_wasm_rs.wasm
+# wasm-gc hoplitekb_wasm_rs_bg.wasm
+# cp hoplitekb_wasm_rs_bg.wasm ~/Sites/hoplitekb-wasm-rs/
+# cp hoplitekb_wasm_rs.js ~/Sites/hoplitekb-wasm-rs/
+
+
 [dependencies]
 unicode-normalization = "0.1.17"
 bitflags = "1.2.1"

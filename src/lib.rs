@@ -1,3 +1,4 @@
+#![no_std]
 extern crate unicode_normalization;
 use unicode_normalization::char::compose;
 use unicode_normalization::UnicodeNormalization;
@@ -5,8 +6,10 @@ use unicode_normalization::UnicodeNormalization;
 #[macro_use]
 extern crate bitflags;
 
+
+
 bitflags! {
-    struct HGKDiacritics: u32 {
+    pub struct HGKDiacritics: u32 {
         const ROUGH          = 0x001;
         const SMOOTH         = 0x002;
         const ACUTE          = 0x004;
@@ -21,7 +24,7 @@ bitflags! {
     }
 }
 
-enum HGKUnicode_Mode {
+pub enum HGKUnicode_Mode {
     Precomposed,
     PrecomposedPUA,
     CombiningOnly
@@ -118,7 +121,7 @@ COMBINING_UNDERDOT
     }
 
     fn toggle_diacritic(&mut self, d:HGKDiacritics, on_only:bool) {
-        if !self.isLegal(d) {
+        if !self.is_legal(d) {
             return;
         }
 
@@ -164,7 +167,7 @@ COMBINING_UNDERDOT
         }
     }
 
-    fn isLegal(&mut self, d:HGKDiacritics) -> bool {
+    fn is_legal(&mut self, d:HGKDiacritics) -> bool {
         match d {
             HGKDiacritics::ROUGH => {
                 true
@@ -251,7 +254,7 @@ impl HGKIsLongOrShort for char {
     }
 }
 
-fn toggle_diacritic_str(l:&str, d:HGKDiacritics, on_only:bool, mode:HGKUnicode_Mode) -> String {
+pub fn toggle_diacritic_str(l:&str, d:HGKDiacritics, on_only:bool, mode:HGKUnicode_Mode) -> String {
     let mut letter = HGKLetter::from_str(l);
     letter.toggle_diacritic(d, on_only);
     return letter.to_string(mode);
