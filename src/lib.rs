@@ -1,12 +1,11 @@
-#![no_std]
+use std::fmt::Display;
 extern crate unicode_normalization;
 use unicode_normalization::char::compose;
 use unicode_normalization::UnicodeNormalization;
+//use alloc::string::String;
 
 #[macro_use]
 extern crate bitflags;
-
-
 
 bitflags! {
     pub struct HGKDiacritics: u32 {
@@ -82,42 +81,53 @@ COMBINING_IOTA_SUBSCRIPT,
 COMBINING_UNDERDOT
 */
     fn to_string(&mut self, unicode_mode:HGKUnicode_Mode) -> String {
-        let mut s = self.letter.to_string();
+        //let mut s = self.letter.to_string();
+        let mut s = vec![self.letter];
         if (self.diacritics & HGKDiacritics::MACRON) == HGKDiacritics::MACRON {
-            s = s + "\u{0304}";
+            //s = s + "\u{0304}";
+            s.push('\u{0304}');
         }
         if (self.diacritics & HGKDiacritics::BREVE) == HGKDiacritics::BREVE {
-            s = s + "\u{0306}";
+            //s = s + "\u{0306}";
+            s.push('\u{0306}');
         }
         if (self.diacritics & HGKDiacritics::DIAERESIS) == HGKDiacritics::DIAERESIS {
-            s = s + "\u{0308}";
+            //s = s + "\u{0308}";
+            s.push('\u{0308}');
         }
         if (self.diacritics & HGKDiacritics::ROUGH) == HGKDiacritics::ROUGH {
-            s = s + "\u{0314}";
+            //s = s + "\u{0314}";
+            s.push('\u{0314}');
         }
         if (self.diacritics & HGKDiacritics::SMOOTH) == HGKDiacritics::SMOOTH {
-            s = s + "\u{0313}";
+            //s = s + "\u{0313}";
+            s.push('\u{0313}');
         }    
         if (self.diacritics & HGKDiacritics::ACUTE) == HGKDiacritics::ACUTE {
-            s = s + "\u{0301}";
+            //s = s + "\u{0301}";
+            s.push('\u{0301}');
         }
         if (self.diacritics & HGKDiacritics::GRAVE) == HGKDiacritics::GRAVE {
-            s = s + "\u{0300}";
+            //s = s + "\u{0300}";
+            s.push('\u{0300}');
         }
         if (self.diacritics & HGKDiacritics::CIRCUMFLEX) == HGKDiacritics::CIRCUMFLEX {
-            s = s + "\u{0342}";
+            //s = s + "\u{0342}";
+            s.push('\u{0342}');
         }
         if (self.diacritics & HGKDiacritics::IOTA_SUBSCRIPT) == HGKDiacritics::IOTA_SUBSCRIPT {
-            s = s + "\u{0345}";
+            //s = s + "\u{0345}";
+            s.push('\u{0345}');
         }
         if (self.diacritics & HGKDiacritics::UNDERDOT) == HGKDiacritics::UNDERDOT {
-            s = s + "\u{0323}";
+            //s = s + "\u{0323}";
+            s.push('\u{0323}');
         }
         match unicode_mode {
-            HGKUnicode_Mode::CombiningOnly => return s,
-            HGKUnicode_Mode::PrecomposedPUA => return s.nfc().collect::<String>(),
-            _ => return s.nfc().collect::<String>()
-        }
+            HGKUnicode_Mode::CombiningOnly => return s.into_iter().collect::<String>(),
+            HGKUnicode_Mode::PrecomposedPUA => return s.into_iter().nfc().collect::<String>(),
+            _ => return s.into_iter().nfc().collect::<String>()
+        }  
     }
 
     fn toggle_diacritic(&mut self, d:HGKDiacritics, on_only:bool) {
@@ -170,16 +180,16 @@ COMBINING_UNDERDOT
     fn is_legal(&mut self, d:HGKDiacritics) -> bool {
         match d {
             HGKDiacritics::ROUGH => {
-                true
+                self.letter.is_greek_vowel()
             },
             HGKDiacritics::SMOOTH => {
-                true
+                self.letter.is_greek_vowel()
             },
             HGKDiacritics::ACUTE => {
-                true
+                self.letter.is_greek_vowel()
             },
             HGKDiacritics::GRAVE => {
-                true
+                self.letter.is_greek_vowel()
             },
             HGKDiacritics::CIRCUMFLEX => {
                 self.letter.is_long_or_short() | self.letter.is_long()
@@ -205,12 +215,21 @@ COMBINING_UNDERDOT
                     _ => false
                 }                
             },
-            //HGKDiacritics::UNDERDOT => { },
+            HGKDiacritics::UNDERDOT => { 
+                true
+            },
             _ => false
         }
     }
 }
-
+/*
+//https://doc.rust-lang.org/stable/rust-by-example/conversion/string.html
+impl Display for HGKLetter {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::result::Result {
+        write!(f, "{}", self.to_string2(HGKUnicode_Mode::Precomposed));
+    }
+}
+*/
 trait HGKIsLong {
     fn is_long(&self) -> bool;
 }
@@ -254,14 +273,37 @@ impl HGKIsLongOrShort for char {
     }
 }
 
+trait HGKIsGreekVowel {
+    fn is_greek_vowel(&self) -> bool;
+}
+
+impl HGKIsGreekVowel for char {
+    fn is_greek_vowel(&self) -> bool {
+        //let letter2 = self.to_lowercase();
+        match self {
+            'α' => true,
+            'ε' => true,
+            'η' => true,
+            'ι' => true,
+            'ο' => true,
+            'υ' => true,
+            'ω' => true,
+            'Α' => true,
+            'Ε' => true,
+            'Η' => true,
+            'Ι' => true,
+            'Ο' => true,
+            'Υ' => true,
+            'Ω' => true,
+            _ => false
+        }
+    }
+}
+
 pub fn toggle_diacritic_str(l:&str, d:HGKDiacritics, on_only:bool, mode:HGKUnicode_Mode) -> String {
     let mut letter = HGKLetter::from_str(l);
     letter.toggle_diacritic(d, on_only);
     return letter.to_string(mode);
-}
-
-fn main() {
-
 }
 
 #[cfg(test)]
