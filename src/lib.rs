@@ -306,6 +306,77 @@ pub fn toggle_diacritic_str(l:&str, d:HGKDiacritics, on_only:bool, mode:HGKUnico
     return letter.to_string(mode);
 }
 
+static greek_upper: &'static [char] = &[
+'\u{0391}',
+'\u{0392}',
+'\u{03A8}',
+'\u{0394}',
+'\u{0395}',
+'\u{03A6}',
+'\u{0393}',
+'\u{0397}',
+'\u{0399}',
+'\u{039E}',
+'\u{039A}',
+'\u{039B}',
+'\u{039C}',
+'\u{039D}',
+'\u{039F}',
+'\u{03A0}',
+'\u{03DC}',
+'\u{03A1}',
+'\u{03A3}',
+'\u{03A4}',
+'\u{0398}',
+'\u{03A9}',
+'\u{00B7}',
+'\u{03A7}',
+'\u{03A5}',
+'\u{0396}'
+];
+
+static greek_lower: &'static [char] = &[
+'\u{03B1}',
+'\u{03B2}',
+'\u{03C8}',
+'\u{03B4}',
+'\u{03B5}',
+'\u{03C6}',
+'\u{03B3}',
+'\u{03B7}',
+'\u{03B9}',
+'\u{03BE}',
+'\u{03BA}',
+'\u{03BB}',
+'\u{03BC}',
+'\u{03BD}',
+'\u{03BF}',
+'\u{03C0}',
+'\u{03DD}',
+'\u{03C1}',
+'\u{03C3}',
+'\u{03C4}',
+'\u{03B8}',
+'\u{03C9}',
+'\u{03C2}',
+'\u{03C7}',
+'\u{03C5}',
+'\u{03B6}'
+];
+
+
+pub fn transliterate(input:usize) -> char {
+    if input >= 0x0061 && input <= 0x007A {
+        return greek_lower[input - 0x0061];
+    }
+    else if input >= 0x0041 && input <= 0x005A {
+        return greek_upper[input - 0x0041];
+    }
+    else {
+        return '\u{0000}';
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -315,6 +386,11 @@ mod tests {
         let s = "ἄβί".to_string();
         let a = s.nfd();
         assert_eq!(a.count(), 6);
+
+        assert_eq!(transliterate(0x0000), '\u{0000}');
+        assert_eq!(transliterate(0x0040), '\u{0000}');
+        assert_eq!(transliterate(0x0061), '\u{03B1}');
+        assert_eq!(transliterate(0x007B), '\u{0000}');
 
         assert_eq!('α'.is_long_or_short(), true);
         assert_eq!('ι'.is_long_or_short(), true);
