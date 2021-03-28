@@ -180,10 +180,10 @@ COMBINING_UNDERDOT
     fn is_legal(&mut self, d:HGKDiacritics) -> bool {
         match d {
             HGKDiacritics::ROUGH => {
-                self.letter.is_greek_vowel()
+                self.letter.is_greek_vowel() || self.letter == 'ρ' || self.letter == 'Ρ'
             },
             HGKDiacritics::SMOOTH => {
-                self.letter.is_greek_vowel()
+                self.letter.is_greek_vowel() || self.letter == 'ρ' || self.letter == 'Ρ'
             },
             HGKDiacritics::ACUTE => {
                 self.letter.is_greek_vowel()
@@ -363,7 +363,6 @@ static greek_lower: &'static [char] = &[
 '\u{03C5}',
 '\u{03B6}'
 ];
-
 
 pub fn transliterate(input:usize) -> char {
     if input >= 0x0061 && input <= 0x007A {
