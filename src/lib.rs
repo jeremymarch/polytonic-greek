@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use std::fmt::Display;
 extern crate unicode_normalization;
 use unicode_normalization::char::compose;
@@ -6,6 +8,18 @@ use unicode_normalization::UnicodeNormalization;
 
 #[macro_use]
 extern crate bitflags;
+
+pub const HGK_NO_DIACRITICS :u32 = 0x000;
+pub const HGK_ROUGH         :u32 = 0x001;
+pub const HGK_SMOOTH        :u32 = 0x002;
+pub const HGK_ACUTE         :u32 = 0x004;
+pub const HGK_GRAVE         :u32 = 0x008;
+pub const HGK_CIRCUMFLEX    :u32 = 0x010;
+pub const HGK_MACRON        :u32 = 0x020;
+pub const HGK_BREVE         :u32 = 0x040;
+pub const HGK_IOTA_SUBSCRIPT:u32 = 0x080;
+pub const HGK_DIAERESIS     :u32 = 0x100;
+pub const HGK_UNDERDOT      :u32 = 0x200;
 
 bitflags! {
     pub struct HGKDiacritics: u32 {
@@ -43,7 +57,13 @@ impl HGKLetter {
                 if unicode_normalization::char::is_combining_mark(c) {
                     assert!(false, "First char of letter is a combining mark.");
                 }
-                bare_letter = c;
+                if c as u32 >= 0xEAF0 && c as u32 <= 0xEB8A {
+                    bare_letter = GREEK_PUA[c as usize - 0xEAF0].0;
+                    //diacritics = GREEK_PUA[c as usize - 0xEAF0].1;
+                }
+                else {
+                   bare_letter = c;
+                }
             }
             else {
                 if !unicode_normalization::char::is_combining_mark(c) {
@@ -306,7 +326,173 @@ pub fn toggle_diacritic_str(l:&str, d:HGKDiacritics, on_only:bool, mode:HGKUnico
     return letter.to_string(mode);
 }
 
-static greek_upper: &'static [char] = &[
+/*
+//const UCS2 puaGreekLookUp[][2] = {
+static GREEK_PUA: &'static [(char, HGKDiacritics)] = &[
+    ('\u{03B1}', HGKDiacritics::MACRON )
+];
+*/
+//pub(crate) const COMPOSITION_TABLE_KV: &[(u32, char)] = &[
+static GREEK_PUA: &'static [(char, u32)] = &[
+    /* EAF0 */ ( '\u{03B1}', HGK_MACRON | HGK_GRAVE ),
+    /* EAF1 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EAF2 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EAF3 */ ( '\u{03B1}', HGK_MACRON | HGK_SMOOTH | HGK_GRAVE ),
+    /* EAF4 */ ( '\u{03B1}', HGK_MACRON | HGK_ROUGH | HGK_GRAVE ),
+    /* EAF5 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EAF6 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EAF7 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EAF8 */ ( '\u{03B1}', HGK_BREVE | HGK_GRAVE ),
+    /* EAF9 */ ( '\u{03B1}', HGK_BREVE | HGK_SMOOTH ),
+    /* EAFA */ ( '\u{03B1}', HGK_BREVE | HGK_SMOOTH | HGK_GRAVE ),
+    /* EAFB */ ( '\u{03B1}', HGK_BREVE | HGK_ROUGH | HGK_ACUTE ),
+    /* EAFC */ ( '\u{03B1}', HGK_BREVE | HGK_ROUGH | HGK_GRAVE ),
+    /* EAFD */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EAFE */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EAFF */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB00 */ ( '\u{03B1}', HGK_MACRON | HGK_ACUTE ),
+    /* EB01 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB02 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB03 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB04 */ ( '\u{03B1}', HGK_MACRON | HGK_SMOOTH ),
+    /* EB05 */ ( '\u{03B1}', HGK_MACRON | HGK_ROUGH ),
+    /* EB06 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB07 */ ( '\u{03B1}', HGK_MACRON | HGK_SMOOTH | HGK_ACUTE ),
+    /* EB08 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB09 */ ( '\u{03B1}', HGK_MACRON | HGK_ROUGH | HGK_ACUTE ),
+    /* EB0A */ ( '\u{03B1}', HGK_BREVE | HGK_ACUTE ),
+    /* EB0B */ ( '\u{03B1}', HGK_BREVE | HGK_ROUGH ),
+    /* EB0C */ ( '\u{03B1}', HGK_BREVE | HGK_SMOOTH | HGK_ACUTE ),
+    /* EB0D */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB0E */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB0F */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB10 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB11 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB12 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB13 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB14 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB15 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB16 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB17 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB18 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB19 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB1A */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB1B */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB1C */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB1D */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB1E */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB1F */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB20 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB21 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB22 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB23 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB24 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB25 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB26 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB27 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB28 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB29 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB2A */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB2B */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB2C */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB2D */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB2E */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB2F */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB30 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB31 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB32 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB33 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB34 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB35 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB36 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB37 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB38 */ ( '\u{03B9}', HGK_MACRON | HGK_GRAVE ),
+    /* EB39 */ ( '\u{03B9}', HGK_MACRON | HGK_ACUTE ),
+    /* EB3A */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB3B */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB3C */ ( '\u{03B9}', HGK_MACRON | HGK_SMOOTH ),
+    /* EB3D */ ( '\u{03B9}', HGK_MACRON | HGK_SMOOTH | HGK_ACUTE ),
+    /* EB3E */ ( '\u{03B9}', HGK_MACRON | HGK_ROUGH ),
+    /* EB3F */ ( '\u{03B9}', HGK_MACRON | HGK_ROUGH | HGK_ACUTE ),
+    /* EB40 */ ( '\u{03B9}', HGK_BREVE | HGK_ACUTE ),
+    /* EB41 */ ( '\u{03B9}', HGK_BREVE | HGK_SMOOTH ),
+    /* EB42 */ ( '\u{03B9}', HGK_BREVE | HGK_SMOOTH | HGK_ACUTE ),
+    /* EB43 */ ( '\u{03B9}', HGK_BREVE | HGK_ROUGH ),
+    /* EB44 */ ( '\u{03B9}', HGK_BREVE | HGK_GRAVE ),
+    /* EB45 */ ( '\u{03B9}', HGK_BREVE | HGK_SMOOTH | HGK_GRAVE ),
+    /* EB46 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB47 */ ( '\u{03B9}', HGK_BREVE | HGK_ROUGH | HGK_ACUTE ),
+    /* EB48 */ ( '\u{03B9}', HGK_BREVE | HGK_ROUGH | HGK_GRAVE ),
+    /* EB49 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB4A */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB4B */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB4C */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB4D */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB4E */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB4F */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB50 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB51 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB52 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB53 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB54 */ ( '\u{03B9}', HGK_MACRON | HGK_SMOOTH | HGK_GRAVE ),
+    /* EB55 */ ( '\u{03B9}', HGK_MACRON | HGK_ROUGH | HGK_GRAVE ),
+    /* EB56 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB57 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB58 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB59 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB5A */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB5B */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB5C */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB5D */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB5E */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB5F */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB60 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB61 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB62 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB63 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB64 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB65 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB66 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB67 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB68 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB69 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB6A */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB6B */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB6C */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB6D */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB6E */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB6F */ ( '\u{03C5}', HGK_MACRON | HGK_GRAVE ),
+    /* EB70 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB71 */ ( '\u{03C5}', HGK_MACRON | HGK_SMOOTH | HGK_GRAVE ),
+    /* EB72 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB73 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB74 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB75 */ ( '\u{03C5}', HGK_MACRON | HGK_ROUGH | HGK_GRAVE ),
+    /* EB76 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB77 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB78 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB79 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB7A */ ( '\u{03C5}', HGK_MACRON | HGK_ACUTE ),
+    /* EB7B */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB7C */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB7D */ ( '\u{03C5}', HGK_MACRON | HGK_SMOOTH ),
+    /* EB7E */ ( '\u{03C5}', HGK_MACRON | HGK_ROUGH ),
+    /* EB7F */ ( '\u{03C5}', HGK_MACRON | HGK_SMOOTH | HGK_ACUTE ),
+    /* EB80 */ ( '\u{03C5}', HGK_MACRON | HGK_ROUGH | HGK_ACUTE ),
+
+    /* EB81 */ ( '\u{03C5}', HGK_BREVE | HGK_ACUTE ),
+    /* EB82 */ ( '\u{03C5}', HGK_BREVE | HGK_ROUGH ),
+    /* EB83 */ ( '\u{03C5}', HGK_BREVE | HGK_GRAVE ),
+    /* EB84 */ ( '\u{03C5}', HGK_BREVE | HGK_SMOOTH ),
+    /* EB85 */ ( '\u{03C5}', HGK_BREVE | HGK_SMOOTH | HGK_ACUTE ),
+    /* EB86 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB87 */ ( '\u{0000}', HGK_NO_DIACRITICS),
+    /* EB88 */ ( '\u{03C5}', HGK_BREVE | HGK_SMOOTH | HGK_GRAVE ),
+    /* EB89 */ ( '\u{03C5}', HGK_BREVE | HGK_ROUGH | HGK_ACUTE ),
+    /* EB8A */ ( '\u{03C5}', HGK_BREVE | HGK_ROUGH | HGK_GRAVE )
+];
+
+static GREEK_UPPER: &'static [char] = &[
 '\u{0391}',
 '\u{0392}',
 '\u{03A8}',
@@ -335,7 +521,7 @@ static greek_upper: &'static [char] = &[
 '\u{0396}'
 ];
 
-static greek_lower: &'static [char] = &[
+static GREEK_LOWER: &'static [char] = &[
 '\u{03B1}',
 '\u{03B2}',
 '\u{03C8}',
@@ -366,10 +552,10 @@ static greek_lower: &'static [char] = &[
 
 pub fn transliterate(input:usize) -> char {
     if input >= 0x0061 && input <= 0x007A {
-        return greek_lower[input - 0x0061];
+        return GREEK_LOWER[input - 0x0061];
     }
     else if input >= 0x0041 && input <= 0x005A {
-        return greek_upper[input - 0x0041];
+        return GREEK_UPPER[input - 0x0041];
     }
     else {
         return '\u{0000}';
@@ -386,6 +572,10 @@ mod tests {
         let a = s.nfd();
         assert_eq!(a.count(), 6);
 
+        let z4 = "\u{EAF0}".nfd();
+        println!("test pua: {}", z4);
+        assert_eq!("\u{EAF0}".nfd().next(), Some('\u{EAF0}'));
+
         assert_eq!(transliterate(0x0000), '\u{0000}');
         assert_eq!(transliterate(0x0040), '\u{0000}');
         assert_eq!(transliterate(0x0061), '\u{03B1}');
@@ -398,6 +588,8 @@ mod tests {
         assert_eq!('ω'.is_long(), true);
         assert_eq!('ε'.is_short(), true);
         assert_eq!('ο'.is_short(), true);
+
+        let _aa = HGKLetter::from_str("\u{EAF0}");
 
         let a2 = HGKLetter::from_str("\u{03B1}\u{0301}");
         assert_eq!(a2.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
@@ -434,7 +626,7 @@ mod tests {
         assert_ne!(a, b);
 
         let s = String::from("ἄ");
-        let v: Vec<char> = s.chars().collect();
+        let _v: Vec<char> = s.chars().collect();
 
         let a4 = toggle_diacritic_str("α", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::Precomposed);
         assert_eq!(a4, "\u{03AC}");//ά");
