@@ -135,7 +135,7 @@ COMBINING_UNDERDOT
             self.diacritics |= d;
         }
         else {
-            self.diacritics &= !d; //turn off: rust uses !, c uses ~
+            self.diacritics &= !d; //turn off: rust uses !, C uses ~
             //return;
         }
         match d {
@@ -188,7 +188,7 @@ COMBINING_UNDERDOT
                 self.letter.is_greek_vowel()
             },
             HGK_CIRCUMFLEX => {
-                self.letter.is_long_or_short() | self.letter.is_long()
+                self.letter.is_long_or_short() || self.letter.is_long()
             },
             HGK_MACRON => {
                 self.letter.is_long_or_short()
@@ -235,6 +235,8 @@ impl HGKIsLong for char {
         match self {
             'η' => true,
             'ω' => true,
+            'Η' => true,
+            'Ω' => true,
             _ => false
         }
     }
@@ -249,6 +251,8 @@ impl HGKIsShort for char {
         match self {
             'ε' => true,
             'ο' => true,
+            'Ε' => true,
+            'Ο' => true,
             _ => false
         }
     }
@@ -264,6 +268,9 @@ impl HGKIsLongOrShort for char {
             'α' => true,
             'ι' => true,
             'υ' => true,
+            'Α' => true,
+            'Ι' => true,
+            'Υ' => true,
             _ => false
         }
     }
@@ -562,13 +569,49 @@ mod tests {
         assert_eq!(transliterate(0x007B), '\u{0000}');
 
         assert_eq!('α'.is_long_or_short(), true);
-        assert_eq!('ι'.is_long_or_short(), true);
-        assert_eq!('υ'.is_long_or_short(), true);
-        assert_eq!('η'.is_long(), true);
-        assert_eq!('ω'.is_long(), true);
+        assert_eq!('α'.is_long(), false);
+        assert_eq!('α'.is_short(), false);
+        assert_eq!('ε'.is_long_or_short(), false);
+        assert_eq!('ε'.is_long(), false);
         assert_eq!('ε'.is_short(), true);
+        assert_eq!('η'.is_long_or_short(), false);
+        assert_eq!('η'.is_long(), true);
+        assert_eq!('η'.is_short(), false);
+        assert_eq!('ι'.is_long_or_short(), true);
+        assert_eq!('ι'.is_long(), false);
+        assert_eq!('ι'.is_short(), false);
+        assert_eq!('ο'.is_long_or_short(), false);
+        assert_eq!('ο'.is_long(), false);
         assert_eq!('ο'.is_short(), true);
+        assert_eq!('υ'.is_long_or_short(), true);
+        assert_eq!('υ'.is_long(), false);
+        assert_eq!('υ'.is_short(), false);
+        assert_eq!('ω'.is_long_or_short(), false);
+        assert_eq!('ω'.is_long(), true);
+        assert_eq!('ω'.is_short(), false);
 
+        assert_eq!('Α'.is_long_or_short(), true);
+        assert_eq!('Α'.is_long(), false);
+        assert_eq!('Α'.is_short(), false);
+        assert_eq!('Ε'.is_long_or_short(), false);
+        assert_eq!('Ε'.is_long(), false);
+        assert_eq!('Ε'.is_short(), true);
+        assert_eq!('Η'.is_long_or_short(), false);
+        assert_eq!('Η'.is_long(), true);
+        assert_eq!('Η'.is_short(), false);
+        assert_eq!('Ι'.is_long_or_short(), true);
+        assert_eq!('Ι'.is_long(), false);
+        assert_eq!('Ι'.is_short(), false);
+        assert_eq!('Ο'.is_long_or_short(), false);
+        assert_eq!('Ο'.is_long(), false);
+        assert_eq!('Ο'.is_short(), true);
+        assert_eq!('Υ'.is_long_or_short(), true);
+        assert_eq!('Υ'.is_long(), false);
+        assert_eq!('Υ'.is_short(), false);
+        assert_eq!('Ω'.is_long_or_short(), false);
+        assert_eq!('Ω'.is_long(), true);
+        assert_eq!('Ω'.is_short(), false);
+        
         let _aa = HGKLetter::from_str("\u{EAF0}");
 
         let a2 = HGKLetter::from_str("\u{03B1}\u{0301}");
@@ -608,18 +651,33 @@ mod tests {
         let s = String::from("ἄ");
         let _v: Vec<char> = s.chars().collect();
 
-        let a4 = toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::Precomposed);
-        assert_eq!(a4, "\u{03AC}");//ά");
-        let a6 = toggle_diacritic_str("ὰ", HGK_ACUTE, false, HgkUnicodeMode::Precomposed);
-        assert_eq!(a6, "\u{03AC}");//ά");
-        let a5 = toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::CombiningOnly);
-        assert_eq!(a5, "\u{03B1}\u{0301}");
-        let a7 = toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::CombiningOnly);
-        assert_eq!(a7, "\u{03B1}\u{0342}");
-        let a8 = toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed);
-        assert_eq!(a8, "\u{1FB6}");
-
-        let a9 = toggle_diacritic_str("ε", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed);
-        assert_eq!(a9, "ε");
+        assert_eq!(toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::Precomposed), 
+            "\u{03AC}");//ά");
+        assert_eq!(toggle_diacritic_str("ὰ", HGK_ACUTE, false, HgkUnicodeMode::Precomposed), 
+            "\u{03AC}");//ά");
+        assert_eq!(toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::CombiningOnly), 
+            "\u{03B1}\u{0301}");
+        assert_eq!(toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::CombiningOnly), 
+            "\u{03B1}\u{0342}");
+        assert_eq!(toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed), 
+            "\u{1FB6}");
+        assert_eq!(toggle_diacritic_str("ε", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed), 
+            "ε");
+        assert_eq!(toggle_diacritic_str("ω", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed), 
+            "ῶ");
+        assert_eq!(toggle_diacritic_str("ρ", HGK_ROUGH, false, HgkUnicodeMode::Precomposed), 
+            "ῥ");
+        assert_eq!(toggle_diacritic_str("Ρ", HGK_ROUGH, false, HgkUnicodeMode::Precomposed), 
+            "Ῥ");
+        assert_eq!(toggle_diacritic_str("ρ", HGK_SMOOTH, false, HgkUnicodeMode::Precomposed), 
+            "ῤ");
+        assert_eq!(toggle_diacritic_str("Ρ", HGK_SMOOTH, false, HgkUnicodeMode::Precomposed), 
+            "Ρ\u{0313}"); //there is no precomposed capital rho with smooth breathing
+        assert_eq!(toggle_diacritic_str("Ρ\u{0313}", HGK_SMOOTH, false, HgkUnicodeMode::Precomposed), 
+            "Ρ");
+        assert_eq!(toggle_diacritic_str("Ρ\u{0313}", HGK_ROUGH, false, HgkUnicodeMode::Precomposed), 
+            "Ῥ");
+        assert_eq!(toggle_diacritic_str("Ρ\u{0313}", HGK_ROUGH, false, HgkUnicodeMode::CombiningOnly), 
+            "Ρ\u{0314}");
     }
 }
