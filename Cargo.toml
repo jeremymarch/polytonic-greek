@@ -16,6 +16,8 @@ edition = "2018"
 # cp target/wasm32-unknown-unknown/debug/hoplitekb_wasm_rs_bg.wasm ~/Sites/hoplitekb-wasm-rs/
 # cp target/wasm32-unknown-unknown/debug/hoplitekb_wasm_rs.js ~/Sites/hoplitekb-wasm-rs/
 
+[lib]
+doctest = false # don't run Doc-tests for now
 
 [dependencies]
 unicode-normalization = { version = "0.1.17", default-features = false }
