@@ -20,5 +20,9 @@ edition = "2018"
 [dependencies]
 unicode-normalization = { version = "0.1.17", default-features = false }
 
+# [dependencies.tinyvec]
+# version = "1"
+# features = ["alloc"]
+
 [profile.release]
 opt-level = "z"

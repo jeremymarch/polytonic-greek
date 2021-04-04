@@ -4,11 +4,12 @@
 #[macro_use]
 extern crate alloc;
 use alloc::string::String;
-use alloc::vec::Vec;
 
-use core::fmt::Display;
+//extern crate tinyvec;
+//use tinyvec::TinyVec;
+
+//use core::fmt::Display;
 extern crate unicode_normalization;
-use unicode_normalization::char::compose;
 use unicode_normalization::UnicodeNormalization;
 
 pub const HGK_NO_DIACRITICS :u32 = 0x000;
@@ -23,7 +24,7 @@ pub const HGK_IOTA_SUBSCRIPT:u32 = 0x080;
 pub const HGK_DIAERESIS     :u32 = 0x100;
 pub const HGK_UNDERDOT      :u32 = 0x200;
 
-pub enum HGKUnicode_Mode {
+pub enum HgkUnicodeMode {
     Precomposed,
     CombiningOnly,
     PrecomposedPUA
@@ -86,7 +87,7 @@ COMBINING_CIRCUMFLEX,
 COMBINING_IOTA_SUBSCRIPT, 
 COMBINING_UNDERDOT
 */
-    fn to_string(&mut self, unicode_mode:HGKUnicode_Mode) -> String {
+    fn to_string(&mut self, unicode_mode:HgkUnicodeMode) -> String {
         let mut s = vec![self.letter];
         if (self.diacritics & HGK_MACRON) == HGK_MACRON {
             s.push('\u{0304}');
@@ -119,8 +120,8 @@ COMBINING_UNDERDOT
             s.push('\u{0323}');
         }
         match unicode_mode {
-            HGKUnicode_Mode::CombiningOnly => return s.into_iter().collect::<String>(),
-            HGKUnicode_Mode::PrecomposedPUA => return s.into_iter().nfc().collect::<String>(),
+            HgkUnicodeMode::CombiningOnly => return s.into_iter().collect::<String>(),
+            HgkUnicodeMode::PrecomposedPUA => return s.into_iter().nfc().collect::<String>(),
             _ => return s.into_iter().nfc().collect::<String>()
         }  
     }
@@ -221,7 +222,7 @@ COMBINING_UNDERDOT
 //https://doc.rust-lang.org/stable/rust-by-example/conversion/string.html
 impl Display for HGKLetter {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::result::Result {
-        write!(f, "{}", self.to_string2(HGKUnicode_Mode::Precomposed));
+        write!(f, "{}", self.to_string2(HgkUnicodeMode::Precomposed));
     }
 }
 */
@@ -295,7 +296,7 @@ impl HGKIsGreekVowel for char {
     }
 }
 
-pub fn toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HGKUnicode_Mode) -> String {
+pub fn toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode) -> String {
     let mut letter = HGKLetter::from_str(l);
     letter.toggle_diacritic(d, on_only);
     return letter.to_string(mode);
@@ -540,7 +541,9 @@ pub fn transliterate(input:usize) -> char {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+    use unicode_normalization::char::compose;
+    use alloc::vec::Vec;
+
     #[test]
     fn mytest() {
         /*
@@ -548,9 +551,10 @@ mod tests {
         let a = s.nfd();
         assert_eq!(a.count(), 6);
         */
-        let z4 = "\u{EAF0}".nfd();
+        //let z4 = "\u{EAF0}".nfd();
         //println!("test pua: {}", z4);
         assert_eq!("\u{EAF0}".nfd().next(), Some('\u{EAF0}'));
+        assert_eq!("\u{EAF0}".nfd().count(), 1);
 
         assert_eq!(transliterate(0x0000), '\u{0000}');
         assert_eq!(transliterate(0x0040), '\u{0000}');
@@ -604,18 +608,18 @@ mod tests {
         let s = String::from("ἄ");
         let _v: Vec<char> = s.chars().collect();
 
-        let a4 = toggle_diacritic_str("α", HGK_ACUTE, false, HGKUnicode_Mode::Precomposed);
+        let a4 = toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::Precomposed);
         assert_eq!(a4, "\u{03AC}");//ά");
-        let a6 = toggle_diacritic_str("ὰ", HGK_ACUTE, false, HGKUnicode_Mode::Precomposed);
+        let a6 = toggle_diacritic_str("ὰ", HGK_ACUTE, false, HgkUnicodeMode::Precomposed);
         assert_eq!(a6, "\u{03AC}");//ά");
-        let a5 = toggle_diacritic_str("α", HGK_ACUTE, false, HGKUnicode_Mode::CombiningOnly);
+        let a5 = toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::CombiningOnly);
         assert_eq!(a5, "\u{03B1}\u{0301}");
-        let a7 = toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HGKUnicode_Mode::CombiningOnly);
+        let a7 = toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::CombiningOnly);
         assert_eq!(a7, "\u{03B1}\u{0342}");
-        let a8 = toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
+        let a8 = toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed);
         assert_eq!(a8, "\u{1FB6}");
 
-        let a9 = toggle_diacritic_str("ε", HGK_CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
+        let a9 = toggle_diacritic_str("ε", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed);
         assert_eq!(a9, "ε");
     }
 }
