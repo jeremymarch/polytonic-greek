@@ -1,13 +1,19 @@
+#![no_std]
 #![deny(unsafe_code)]
 
-use std::fmt::Display;
+#[macro_use]
+extern crate alloc;
+use alloc::string::String;
+use alloc::vec::Vec;
+
+use core::fmt::Display;
 extern crate unicode_normalization;
 use unicode_normalization::char::compose;
 use unicode_normalization::UnicodeNormalization;
-//use alloc::string::String;
 
-#[macro_use]
-extern crate bitflags;
+
+//#[macro_use]
+//extern crate bitflags;
 
 pub const HGK_NO_DIACRITICS :u32 = 0x000;
 pub const HGK_ROUGH         :u32 = 0x001;
@@ -20,7 +26,7 @@ pub const HGK_BREVE         :u32 = 0x040;
 pub const HGK_IOTA_SUBSCRIPT:u32 = 0x080;
 pub const HGK_DIAERESIS     :u32 = 0x100;
 pub const HGK_UNDERDOT      :u32 = 0x200;
-
+/*
 bitflags! {
     pub struct HGKDiacritics: u32 {
         const ROUGH          = 0x001;
@@ -36,7 +42,7 @@ bitflags! {
         //const ABC = Self::A.bits | Self::B.bits | Self::C.bits;
     }
 }
-
+*/
 pub enum HGKUnicode_Mode {
     Precomposed,
     PrecomposedPUA,
@@ -45,12 +51,14 @@ pub enum HGKUnicode_Mode {
 
 struct HGKLetter {
     letter: char,
-    diacritics: HGKDiacritics
+    //diacritics: HGKDiacritics
+    diacritics: u32
 }
 
 impl HGKLetter {
     fn from_str(l:&str) -> HGKLetter {
-        let mut diacritics: HGKDiacritics = HGKDiacritics::empty();
+        //let mut diacritics: HGKDiacritics = HGKDiacritics::empty();
+        let mut diacritics:u32 = 0;
         let mut bare_letter: char = '\u{0000}';
         for (i, c) in l.nfd().enumerate() {
             if i == 0 {
@@ -59,7 +67,7 @@ impl HGKLetter {
                 }
                 if c as u32 >= 0xEAF0 && c as u32 <= 0xEB8A {
                     bare_letter = GREEK_PUA[c as usize - 0xEAF0].0;
-                    //diacritics = GREEK_PUA[c as usize - 0xEAF0].1;
+                    diacritics = GREEK_PUA[c as usize - 0xEAF0].1;
                 }
                 else {
                    bare_letter = c;
@@ -71,16 +79,16 @@ impl HGKLetter {
                 }
                 else {
                     match c {
-                        '\u{0300}' => diacritics |= HGKDiacritics::GRAVE,
-                        '\u{0301}' => diacritics |= HGKDiacritics::ACUTE,
-                        '\u{0304}' => diacritics |= HGKDiacritics::MACRON,
-                        '\u{0306}' => diacritics |= HGKDiacritics::BREVE,
-                        '\u{0308}' => diacritics |= HGKDiacritics::DIAERESIS,
-                        '\u{0313}' => diacritics |= HGKDiacritics::SMOOTH,
-                        '\u{0314}' => diacritics |= HGKDiacritics::ROUGH,
-                        '\u{0323}' => diacritics |= HGKDiacritics::UNDERDOT,
-                        '\u{0342}' => diacritics |= HGKDiacritics::CIRCUMFLEX,
-                        '\u{0345}' => diacritics |= HGKDiacritics::IOTA_SUBSCRIPT,
+                        '\u{0300}' => diacritics |= HGK_GRAVE, //HGKDiacritics::GRAVE,
+                        '\u{0301}' => diacritics |= HGK_ACUTE, //HGKDiacritics::ACUTE,
+                        '\u{0304}' => diacritics |= HGK_MACRON, //HGKDiacritics::MACRON,
+                        '\u{0306}' => diacritics |= HGK_BREVE, //HGKDiacritics::BREVE,
+                        '\u{0308}' => diacritics |= HGK_DIAERESIS, //HGKDiacritics::DIAERESIS,
+                        '\u{0313}' => diacritics |= HGK_SMOOTH, //HGKDiacritics::SMOOTH,
+                        '\u{0314}' => diacritics |= HGK_ROUGH, //HGKDiacritics::ROUGH,
+                        '\u{0323}' => diacritics |= HGK_UNDERDOT, //HGKDiacritics::UNDERDOT,
+                        '\u{0342}' => diacritics |= HGK_CIRCUMFLEX, //HGKDiacritics::CIRCUMFLEX,
+                        '\u{0345}' => diacritics |= HGK_IOTA_SUBSCRIPT, //HGKDiacritics::IOTA_SUBSCRIPT,
                         _ => ()
                     }
                 }
@@ -103,43 +111,43 @@ COMBINING_UNDERDOT
     fn to_string(&mut self, unicode_mode:HGKUnicode_Mode) -> String {
         //let mut s = self.letter.to_string();
         let mut s = vec![self.letter];
-        if (self.diacritics & HGKDiacritics::MACRON) == HGKDiacritics::MACRON {
+        if (self.diacritics & HGK_MACRON) == HGK_MACRON {
             //s = s + "\u{0304}";
             s.push('\u{0304}');
         }
-        if (self.diacritics & HGKDiacritics::BREVE) == HGKDiacritics::BREVE {
+        if (self.diacritics & HGK_BREVE) == HGK_BREVE {
             //s = s + "\u{0306}";
             s.push('\u{0306}');
         }
-        if (self.diacritics & HGKDiacritics::DIAERESIS) == HGKDiacritics::DIAERESIS {
+        if (self.diacritics & HGK_DIAERESIS) == HGK_DIAERESIS {
             //s = s + "\u{0308}";
             s.push('\u{0308}');
         }
-        if (self.diacritics & HGKDiacritics::ROUGH) == HGKDiacritics::ROUGH {
+        if (self.diacritics & HGK_ROUGH) == HGK_ROUGH {
             //s = s + "\u{0314}";
             s.push('\u{0314}');
         }
-        if (self.diacritics & HGKDiacritics::SMOOTH) == HGKDiacritics::SMOOTH {
+        if (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH {
             //s = s + "\u{0313}";
             s.push('\u{0313}');
         }    
-        if (self.diacritics & HGKDiacritics::ACUTE) == HGKDiacritics::ACUTE {
+        if (self.diacritics & HGK_ACUTE) == HGK_ACUTE {
             //s = s + "\u{0301}";
             s.push('\u{0301}');
         }
-        if (self.diacritics & HGKDiacritics::GRAVE) == HGKDiacritics::GRAVE {
+        if (self.diacritics & HGK_GRAVE) == HGK_GRAVE {
             //s = s + "\u{0300}";
             s.push('\u{0300}');
         }
-        if (self.diacritics & HGKDiacritics::CIRCUMFLEX) == HGKDiacritics::CIRCUMFLEX {
+        if (self.diacritics & HGK_CIRCUMFLEX) == HGK_CIRCUMFLEX {
             //s = s + "\u{0342}";
             s.push('\u{0342}');
         }
-        if (self.diacritics & HGKDiacritics::IOTA_SUBSCRIPT) == HGKDiacritics::IOTA_SUBSCRIPT {
+        if (self.diacritics & HGK_IOTA_SUBSCRIPT) == HGK_IOTA_SUBSCRIPT {
             //s = s + "\u{0345}";
             s.push('\u{0345}');
         }
-        if (self.diacritics & HGKDiacritics::UNDERDOT) == HGKDiacritics::UNDERDOT {
+        if (self.diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
             //s = s + "\u{0323}";
             s.push('\u{0323}');
         }
@@ -150,7 +158,7 @@ COMBINING_UNDERDOT
         }  
     }
 
-    fn toggle_diacritic(&mut self, d:HGKDiacritics, on_only:bool) {
+    fn toggle_diacritic(&mut self, d:u32, on_only:bool) {
         if !self.is_legal(d) {
             return;
         }
@@ -163,32 +171,32 @@ COMBINING_UNDERDOT
             //return;
         }
         match d {
-            HGKDiacritics::ROUGH => {
-                self.diacritics &= !(HGKDiacritics::SMOOTH | HGKDiacritics::DIAERESIS);
+            HGK_ROUGH => {
+                self.diacritics &= !(HGK_SMOOTH | HGK_DIAERESIS);
             },
-            HGKDiacritics::SMOOTH => {
-                self.diacritics &= !(HGKDiacritics::ROUGH | HGKDiacritics::DIAERESIS);
+            HGK_SMOOTH => {
+                self.diacritics &= !(HGK_ROUGH | HGK_DIAERESIS);
             },
-            HGKDiacritics::ACUTE => {
-                self.diacritics &= !(HGKDiacritics::GRAVE | HGKDiacritics::CIRCUMFLEX);
+            HGK_ACUTE => {
+                self.diacritics &= !(HGK_GRAVE | HGK_CIRCUMFLEX);
             },
-            HGKDiacritics::GRAVE => {
-                self.diacritics &= !(HGKDiacritics::ACUTE | HGKDiacritics::CIRCUMFLEX);
+            HGK_GRAVE => {
+                self.diacritics &= !(HGK_ACUTE | HGK_CIRCUMFLEX);
             },
-            HGKDiacritics::CIRCUMFLEX => {
-                self.diacritics &= !(HGKDiacritics::ACUTE | HGKDiacritics::GRAVE);
+            HGK_CIRCUMFLEX => {
+                self.diacritics &= !(HGK_ACUTE | HGK_GRAVE);
             },
-            HGKDiacritics::MACRON => {
-                self.diacritics &= !(HGKDiacritics::BREVE | HGKDiacritics::CIRCUMFLEX);
+            HGK_MACRON => {
+                self.diacritics &= !(HGK_BREVE | HGK_CIRCUMFLEX);
             },
-            HGKDiacritics::BREVE => {
-                self.diacritics &= !(HGKDiacritics::MACRON | HGKDiacritics::CIRCUMFLEX | HGKDiacritics::IOTA_SUBSCRIPT);
+            HGK_BREVE => {
+                self.diacritics &= !(HGK_MACRON | HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT);
             },
-            HGKDiacritics::IOTA_SUBSCRIPT => {
-                self.diacritics &= !(HGKDiacritics::BREVE);
+            HGK_IOTA_SUBSCRIPT => {
+                self.diacritics &= !(HGK_BREVE);
             },
-            HGKDiacritics::DIAERESIS => {
-                self.diacritics &= !(HGKDiacritics::ROUGH | HGKDiacritics::SMOOTH);
+            HGK_DIAERESIS => {
+                self.diacritics &= !(HGK_ROUGH | HGK_SMOOTH);
             },
             //HGKDiacritics::UNDERDOT => { },
             _ => {
@@ -197,30 +205,30 @@ COMBINING_UNDERDOT
         }
     }
 
-    fn is_legal(&mut self, d:HGKDiacritics) -> bool {
+    fn is_legal(&mut self, d:u32) -> bool {
         match d {
-            HGKDiacritics::ROUGH => {
+            HGK_ROUGH => {
                 self.letter.is_greek_vowel() || self.letter == 'ρ' || self.letter == 'Ρ'
             },
-            HGKDiacritics::SMOOTH => {
+            HGK_SMOOTH => {
                 self.letter.is_greek_vowel() || self.letter == 'ρ' || self.letter == 'Ρ'
             },
-            HGKDiacritics::ACUTE => {
+            HGK_ACUTE => {
                 self.letter.is_greek_vowel()
             },
-            HGKDiacritics::GRAVE => {
+            HGK_GRAVE => {
                 self.letter.is_greek_vowel()
             },
-            HGKDiacritics::CIRCUMFLEX => {
+            HGK_CIRCUMFLEX => {
                 self.letter.is_long_or_short() | self.letter.is_long()
             },
-            HGKDiacritics::MACRON => {
+            HGK_MACRON => {
                 self.letter.is_long_or_short()
             },
-            HGKDiacritics::BREVE => {
+            HGK_BREVE => {
                 self.letter.is_long_or_short()    
             },
-            HGKDiacritics::IOTA_SUBSCRIPT => {
+            HGK_IOTA_SUBSCRIPT => {
                 match self.letter {
                     'α' => true,
                     'ω' => true,
@@ -228,14 +236,14 @@ COMBINING_UNDERDOT
                     _ => false
                 } 
             },
-            HGKDiacritics::DIAERESIS => {
+            HGK_DIAERESIS => {
                 match self.letter {
                     'ι' => true,
                     'υ' => true,
                     _ => false
                 }                
             },
-            HGKDiacritics::UNDERDOT => { 
+            HGK_UNDERDOT => { 
                 true
             },
             _ => false
@@ -320,7 +328,7 @@ impl HGKIsGreekVowel for char {
     }
 }
 
-pub fn toggle_diacritic_str(l:&str, d:HGKDiacritics, on_only:bool, mode:HGKUnicode_Mode) -> String {
+pub fn toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HGKUnicode_Mode) -> String {
     let mut letter = HGKLetter::from_str(l);
     letter.toggle_diacritic(d, on_only);
     return letter.to_string(mode);
@@ -568,12 +576,13 @@ mod tests {
     
     #[test]
     fn mytest() {
+        /*
         let s = "ἄβί".to_string();
         let a = s.nfd();
         assert_eq!(a.count(), 6);
-
+        */
         let z4 = "\u{EAF0}".nfd();
-        println!("test pua: {}", z4);
+        //println!("test pua: {}", z4);
         assert_eq!("\u{EAF0}".nfd().next(), Some('\u{EAF0}'));
 
         assert_eq!(transliterate(0x0000), '\u{0000}');
@@ -592,24 +601,24 @@ mod tests {
         let _aa = HGKLetter::from_str("\u{EAF0}");
 
         let a2 = HGKLetter::from_str("\u{03B1}\u{0301}");
-        assert_eq!(a2.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
+        assert_eq!(a2.diacritics & HGK_ACUTE, HGK_ACUTE);
         assert_eq!(a2.letter, '\u{03B1}');
         let a3 = HGKLetter::from_str("\u{03AC}");
-        assert_eq!(a3.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
+        assert_eq!(a3.diacritics & HGK_ACUTE, HGK_ACUTE);
         assert_eq!(a3.letter, '\u{03B1}');
 
-        let mut s: HGKLetter = HGKLetter { letter: 'α', diacritics: HGKDiacritics::ACUTE | HGKDiacritics::GRAVE };
-        assert_eq!(s.diacritics & HGKDiacritics::ACUTE, HGKDiacritics::ACUTE);
-        assert_ne!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
+        let mut s: HGKLetter = HGKLetter { letter: 'α', diacritics: HGK_ACUTE | HGK_GRAVE };
+        assert_eq!(s.diacritics & HGK_ACUTE, HGK_ACUTE);
+        assert_ne!(s.diacritics & HGK_CIRCUMFLEX, HGK_CIRCUMFLEX);
 
-        s.toggle_diacritic(HGKDiacritics::CIRCUMFLEX, true);
-        assert_eq!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
+        s.toggle_diacritic(HGK_CIRCUMFLEX, true);
+        assert_eq!(s.diacritics & HGK_CIRCUMFLEX, HGK_CIRCUMFLEX);
         //don't toggle off, if on_only is set
-        s.toggle_diacritic(HGKDiacritics::CIRCUMFLEX, true);
-        assert_eq!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
+        s.toggle_diacritic(HGK_CIRCUMFLEX, true);
+        assert_eq!(s.diacritics & HGK_CIRCUMFLEX, HGK_CIRCUMFLEX);
         //turn off
-        s.toggle_diacritic(HGKDiacritics::CIRCUMFLEX, false);
-        assert_ne!(s.diacritics & HGKDiacritics::CIRCUMFLEX, HGKDiacritics::CIRCUMFLEX);
+        s.toggle_diacritic(HGK_CIRCUMFLEX, false);
+        assert_ne!(s.diacritics & HGK_CIRCUMFLEX, HGK_CIRCUMFLEX);
 
         assert_eq!(compose('A','\u{30a}'), Some('Å'));
 
@@ -628,18 +637,18 @@ mod tests {
         let s = String::from("ἄ");
         let _v: Vec<char> = s.chars().collect();
 
-        let a4 = toggle_diacritic_str("α", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::Precomposed);
+        let a4 = toggle_diacritic_str("α", HGK_ACUTE, false, HGKUnicode_Mode::Precomposed);
         assert_eq!(a4, "\u{03AC}");//ά");
-        let a6 = toggle_diacritic_str("ὰ", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::Precomposed);
+        let a6 = toggle_diacritic_str("ὰ", HGK_ACUTE, false, HGKUnicode_Mode::Precomposed);
         assert_eq!(a6, "\u{03AC}");//ά");
-        let a5 = toggle_diacritic_str("α", HGKDiacritics::ACUTE, false, HGKUnicode_Mode::CombiningOnly);
+        let a5 = toggle_diacritic_str("α", HGK_ACUTE, false, HGKUnicode_Mode::CombiningOnly);
         assert_eq!(a5, "\u{03B1}\u{0301}");
-        let a7 = toggle_diacritic_str("α", HGKDiacritics::CIRCUMFLEX, false, HGKUnicode_Mode::CombiningOnly);
+        let a7 = toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HGKUnicode_Mode::CombiningOnly);
         assert_eq!(a7, "\u{03B1}\u{0342}");
-        let a8 = toggle_diacritic_str("α", HGKDiacritics::CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
+        let a8 = toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
         assert_eq!(a8, "\u{1FB6}");
 
-        let a9 = toggle_diacritic_str("ε", HGKDiacritics::CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
+        let a9 = toggle_diacritic_str("ε", HGK_CIRCUMFLEX, false, HGKUnicode_Mode::Precomposed);
         assert_eq!(a9, "ε");
     }
 }

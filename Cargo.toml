@@ -19,7 +19,6 @@ edition = "2018"
 
 [dependencies]
 unicode-normalization = "0.1.17"
-bitflags = "1.2.1"
 
 [profile.release]
 opt-level = "z"
