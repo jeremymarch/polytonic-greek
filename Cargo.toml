@@ -18,7 +18,7 @@ edition = "2018"
 
 
 [dependencies]
-unicode-normalization = "0.1.17"
+unicode-normalization = { version = "0.1.17", default-features = false }
 
 [profile.release]
 opt-level = "z"

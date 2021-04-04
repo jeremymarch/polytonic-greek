@@ -62,9 +62,8 @@ impl HGKLetter {
         let mut bare_letter: char = '\u{0000}';
         for (i, c) in l.nfd().enumerate() {
             if i == 0 {
-                if unicode_normalization::char::is_combining_mark(c) {
-                    assert!(false, "First char of letter is a combining mark.");
-                }
+                assert_eq!(unicode_normalization::char::is_combining_mark(c), false); //"First char of letter is a combining mark.");
+                
                 if c as u32 >= 0xEAF0 && c as u32 <= 0xEB8A {
                     bare_letter = GREEK_PUA[c as usize - 0xEAF0].0;
                     diacritics = GREEK_PUA[c as usize - 0xEAF0].1;
