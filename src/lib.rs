@@ -44,7 +44,7 @@ const BREVE_AND_ACUTE:u32 = HGK_BREVE | HGK_ACUTE;
 const BREVE_AND_GRAVE:u32 = HGK_BREVE | HGK_GRAVE;
 
 fn get_pua_index(letter:char, diacritics:u32) -> i32 {
-    let i = match (diacritics) {
+    let i = match diacritics {
         MACRON_AND_SMOOTH           => 0,
         MACRON_AND_SMOOTH_AND_ACUTE => 1,
         MACRON_AND_SMOOTH_AND_GRAVE => 2,
@@ -61,19 +61,19 @@ fn get_pua_index(letter:char, diacritics:u32) -> i32 {
         BREVE_AND_ROUGH_AND_GRAVE   => 13,
         BREVE_AND_ACUTE             => 14,
         BREVE_AND_GRAVE             => 15,
-        _                           => -1
+        _                           => return -1,
     };
-
-    match (letter) {
+    
+    match letter {
         'α' => i,
-        'ι' => i + (16 * 1),
-        'υ' => i + (16 * 2),
-        _ => -1
+        'ι' => i + 16,
+        'υ' => i + 32,
+        _ => -1,
     }
 }
 
 static GREEK_LOWER_PUA: &'static [char] = &[
-'\u{EB04}',
+'\u{EB04}',//alpha
 '\u{EB07}',
 '\u{EAF3}',
 '\u{EB05}',
@@ -89,8 +89,7 @@ static GREEK_LOWER_PUA: &'static [char] = &[
 '\u{EAFC}',
 '\u{EB0A}',
 '\u{EAF8}',
-
-'\u{EB3C}',
+'\u{EB3C}',//iota
 '\u{EB3D}',
 '\u{EB54}',
 '\u{EB3E}',
@@ -106,8 +105,7 @@ static GREEK_LOWER_PUA: &'static [char] = &[
 '\u{EB48}',
 '\u{EB40}',
 '\u{EB44}',
-
-'\u{EB7D}',
+'\u{EB7D}',//up
 '\u{EB7F}',
 '\u{EB71}',
 '\u{EB7E}',
@@ -218,10 +216,10 @@ COMBINING_UNDERDOT
         }
         match unicode_mode {
             HgkUnicodeMode::CombiningOnly => s.into_iter().collect::<String>(),
-            HgkUnicodeMode::PrecomposedPUA => { 
+            HgkUnicodeMode::PrecomposedPUA => {
                 let idx = get_pua_index(self.letter, self.diacritics);
                 if (0..=47).contains(&idx) {
-                    GREEK_LOWER_PUA[idx as usize].to_string()
+                    GREEK_LOWER_PUA[idx as usize].to_string().into()
                 }
                 else {
                     s.into_iter().nfc().collect::<String>() 
@@ -261,7 +259,7 @@ COMBINING_UNDERDOT
                 self.diacritics &= !(HGK_ACUTE | HGK_CIRCUMFLEX);
             },
             HGK_CIRCUMFLEX => {
-                self.diacritics &= !(HGK_ACUTE | HGK_GRAVE);
+                self.diacritics &= !(HGK_ACUTE | HGK_GRAVE | HGK_MACRON | HGK_BREVE);
             },
             HGK_MACRON => {
                 self.diacritics &= !(HGK_BREVE | HGK_CIRCUMFLEX);
@@ -719,6 +717,19 @@ mod tests {
         let s = String::from("ἄ");
         let _v: Vec<char> = s.chars().collect();
  
+        let mut a1 = HGKLetter::from_str("υ");
+        assert_eq!(a1.letter, 'υ');
+        assert_eq!(a1.diacritics, HGK_NO_DIACRITICS);
+        a1.toggle_diacritic(HGK_MACRON, false);
+        assert_eq!(a1.letter, 'υ');
+        assert_eq!(a1.diacritics, HGK_MACRON);
+        assert_eq!(get_pua_index(a1.letter, a1.diacritics), -1);
+        assert_eq!(a1.to_string(HgkUnicodeMode::PrecomposedPUA), "\u{1FE1}");
+        assert_eq!(toggle_diacritic_str("υ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
+            "\u{1FE1}");
+
+
+
         assert_eq!(toggle_diacritic_str("ἀ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{EB04}");
         assert_eq!(toggle_diacritic_str("ἄ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
