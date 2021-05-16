@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate alloc;
 use alloc::string::String;
-use alloc::string::ToString;
+//use alloc::string::ToString;
 
 //extern crate tinyvec;
 //use tinyvec::TinyVec;
@@ -44,7 +44,8 @@ const BREVE_AND_ACUTE:u32 = HGK_BREVE | HGK_ACUTE;
 const BREVE_AND_GRAVE:u32 = HGK_BREVE | HGK_GRAVE;
 
 fn get_pua_index(letter:char, diacritics:u32) -> i32 {
-
+    //turn off iota subscript and underdot temporarily 
+    //since these are added as combining diacritics later
     let i = match (diacritics & !HGK_IOTA_SUBSCRIPT) & !HGK_UNDERDOT {
         MACRON_AND_SMOOTH           => 0,
         MACRON_AND_SMOOTH_AND_ACUTE => 1,
@@ -72,57 +73,6 @@ fn get_pua_index(letter:char, diacritics:u32) -> i32 {
         _ => -1,
     }
 }
-
-static GREEK_LOWER_PUA: &'static [char] = &[
-'\u{EB04}',//alpha
-'\u{EB07}',
-'\u{EAF3}',
-'\u{EB05}',
-'\u{EB09}',
-'\u{EAF4}',
-'\u{EB00}',
-'\u{EAF0}',
-'\u{EAF9}',
-'\u{EB0C}',
-'\u{EAFA}',
-'\u{EB0B}',
-'\u{EAFB}',
-'\u{EAFC}',
-'\u{EB0A}',
-'\u{EAF8}',
-'\u{EB3C}',//iota
-'\u{EB3D}',
-'\u{EB54}',
-'\u{EB3E}',
-'\u{EB3F}',
-'\u{EB55}',
-'\u{EB39}',
-'\u{EB38}',
-'\u{EB41}',
-'\u{EB42}',
-'\u{EB45}',
-'\u{EB43}',
-'\u{EB47}',
-'\u{EB48}',
-'\u{EB40}',
-'\u{EB44}',
-'\u{EB7D}',//up
-'\u{EB7F}',
-'\u{EB71}',
-'\u{EB7E}',
-'\u{EB80}',
-'\u{EB75}',
-'\u{EB7A}',
-'\u{EB6F}',
-'\u{EB84}',
-'\u{EB85}',
-'\u{EB88}',
-'\u{EB82}',
-'\u{EB89}',
-'\u{EB8A}',
-'\u{EB81}',
-'\u{EB83}'
-];
 
 pub enum HgkUnicodeMode {
     Precomposed,
@@ -219,7 +169,7 @@ COMBINING_UNDERDOT
             HgkUnicodeMode::CombiningOnly => s.into_iter().collect::<String>(),
             HgkUnicodeMode::PrecomposedPUA => {
                 let idx = get_pua_index(self.letter, self.diacritics);
-                if (0..=47).contains(&idx) {
+                if (0..=GREEK_LOWER_PUA.len() as i32 - 1 ).contains(&idx) {
                     s.clear();
                     s.push( GREEK_LOWER_PUA[idx as usize] );
 
@@ -377,7 +327,7 @@ impl HGKIsGreekVowel for char {
     }
 }
 
-pub fn toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode) -> String {
+pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode) -> String {
     let mut letter = HGKLetter::from_str(l);
     letter.toggle_diacritic(d, on_only);
     letter.to_string(mode)
@@ -390,8 +340,59 @@ static GREEK_PUA: &'static [(char, HGKDiacritics)] = &[
 ];
 */
 
+const GREEK_LOWER_PUA: &[char] = &[
+'\u{EB04}',//alpha
+'\u{EB07}',
+'\u{EAF3}',
+'\u{EB05}',
+'\u{EB09}',
+'\u{EAF4}',
+'\u{EB00}',
+'\u{EAF0}',
+'\u{EAF9}',
+'\u{EB0C}',
+'\u{EAFA}',
+'\u{EB0B}',
+'\u{EAFB}',
+'\u{EAFC}',
+'\u{EB0A}',
+'\u{EAF8}',
+'\u{EB3C}',//iota
+'\u{EB3D}',
+'\u{EB54}',
+'\u{EB3E}',
+'\u{EB3F}',
+'\u{EB55}',
+'\u{EB39}',
+'\u{EB38}',
+'\u{EB41}',
+'\u{EB42}',
+'\u{EB45}',
+'\u{EB43}',
+'\u{EB47}',
+'\u{EB48}',
+'\u{EB40}',
+'\u{EB44}',
+'\u{EB7D}',//upsilon
+'\u{EB7F}',
+'\u{EB71}',
+'\u{EB7E}',
+'\u{EB80}',
+'\u{EB75}',
+'\u{EB7A}',
+'\u{EB6F}',
+'\u{EB84}',
+'\u{EB85}',
+'\u{EB88}',
+'\u{EB82}',
+'\u{EB89}',
+'\u{EB8A}',
+'\u{EB81}',
+'\u{EB83}'
+];
+
 //pub(crate) const COMPOSITION_TABLE_KV: &[(u32, char)] = &[
-static GREEK_PUA: &'static [(char, u32)] = &[
+const GREEK_PUA: &[(char, u32)] = &[
     /* EAF0 */ ( '\u{03B1}', HGK_MACRON | HGK_GRAVE ),
     /* EAF1 */ ( '\u{0000}', HGK_NO_DIACRITICS),
     /* EAF2 */ ( '\u{0000}', HGK_NO_DIACRITICS),
@@ -550,7 +551,7 @@ static GREEK_PUA: &'static [(char, u32)] = &[
     /* EB8A */ ( '\u{03C5}', HGK_BREVE | HGK_ROUGH | HGK_GRAVE )
 ];
 
-static GREEK_UPPER: &'static [char] = &[
+const GREEK_UPPER: &[char] = &[
 '\u{0391}',
 '\u{0392}',
 '\u{03A8}',
@@ -579,7 +580,7 @@ static GREEK_UPPER: &'static [char] = &[
 '\u{0396}'
 ];
 
-static GREEK_LOWER: &'static [char] = &[
+const GREEK_LOWER: &[char] = &[
 '\u{03B1}',
 '\u{03B2}',
 '\u{03C8}',
@@ -608,7 +609,7 @@ static GREEK_LOWER: &'static [char] = &[
 '\u{03B6}'
 ];
 
-pub fn transliterate(input:usize) -> char {
+pub fn hgk_transliterate(input:usize) -> char {
     if (0x0061..=0x007A).contains(&input) {
         GREEK_LOWER[input - 0x0061]
     }
@@ -636,15 +637,17 @@ mod tests {
         //let z4 = "\u{EAF0}".nfd();
         //println!("test pua: {}", z4);
 
+        assert_eq!(GREEK_LOWER_PUA.len() as i32 - 1, 47);
+
         assert_eq!(MACRON_AND_SMOOTH, HGK_MACRON | HGK_SMOOTH);
 
         assert_eq!("\u{EAF0}".nfd().next(), Some('\u{EAF0}'));
         assert_eq!("\u{EAF0}".nfd().count(), 1);
 
-        assert_eq!(transliterate(0x0000), '\u{0000}');
-        assert_eq!(transliterate(0x0040), '\u{0000}');
-        assert_eq!(transliterate(0x0061), '\u{03B1}');
-        assert_eq!(transliterate(0x007B), '\u{0000}');
+        assert_eq!(hgk_transliterate(0x0000), '\u{0000}');
+        assert_eq!(hgk_transliterate(0x0040), '\u{0000}');
+        assert_eq!(hgk_transliterate(0x0061), '\u{03B1}');
+        assert_eq!(hgk_transliterate(0x007B), '\u{0000}');
 
         assert_eq!('α'.is_long_or_short(), true);
         assert_eq!('α'.is_long(), false);
@@ -737,50 +740,50 @@ mod tests {
         assert_eq!(a1.diacritics, HGK_MACRON);
         assert_eq!(get_pua_index(a1.letter, a1.diacritics), -1);
         assert_eq!(a1.to_string(HgkUnicodeMode::PrecomposedPUA), "\u{1FE1}");
-        assert_eq!(toggle_diacritic_str("υ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
+        assert_eq!(hgk_toggle_diacritic_str("υ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{1FE1}");
 
-        assert_eq!(toggle_diacritic_str("α", HGK_UNDERDOT, false, HgkUnicodeMode::PrecomposedPUA), 
+        assert_eq!(hgk_toggle_diacritic_str("α", HGK_UNDERDOT, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{03B1}\u{0323}");
 
 
 
-        assert_eq!(toggle_diacritic_str("ἀ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
+        assert_eq!(hgk_toggle_diacritic_str("ἀ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{EB04}");
-        assert_eq!(toggle_diacritic_str("ἄ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
+        assert_eq!(hgk_toggle_diacritic_str("ἄ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{EB07}");
-        assert_eq!(toggle_diacritic_str("ὺ", HGK_BREVE, false, HgkUnicodeMode::PrecomposedPUA), 
+        assert_eq!(hgk_toggle_diacritic_str("ὺ", HGK_BREVE, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{EB83}");
-        assert_eq!(toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::PrecomposedPUA), 
+        assert_eq!(hgk_toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{03AC}");
 
-        assert_eq!(toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::Precomposed), 
             "\u{03AC}");//ά");
-        assert_eq!(toggle_diacritic_str("ὰ", HGK_ACUTE, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("ὰ", HGK_ACUTE, false, HgkUnicodeMode::Precomposed), 
             "\u{03AC}");//ά");
-        assert_eq!(toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::CombiningOnly), 
+        assert_eq!(hgk_toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::CombiningOnly), 
             "\u{03B1}\u{0301}");
-        assert_eq!(toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::CombiningOnly), 
+        assert_eq!(hgk_toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::CombiningOnly), 
             "\u{03B1}\u{0342}");
-        assert_eq!(toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("α", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed), 
             "\u{1FB6}");
-        assert_eq!(toggle_diacritic_str("ε", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("ε", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed), 
             "ε");
-        assert_eq!(toggle_diacritic_str("ω", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("ω", HGK_CIRCUMFLEX, false, HgkUnicodeMode::Precomposed), 
             "ῶ");
-        assert_eq!(toggle_diacritic_str("ρ", HGK_ROUGH, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("ρ", HGK_ROUGH, false, HgkUnicodeMode::Precomposed), 
             "ῥ");
-        assert_eq!(toggle_diacritic_str("Ρ", HGK_ROUGH, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("Ρ", HGK_ROUGH, false, HgkUnicodeMode::Precomposed), 
             "Ῥ");
-        assert_eq!(toggle_diacritic_str("ρ", HGK_SMOOTH, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("ρ", HGK_SMOOTH, false, HgkUnicodeMode::Precomposed), 
             "ῤ");
-        assert_eq!(toggle_diacritic_str("Ρ", HGK_SMOOTH, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("Ρ", HGK_SMOOTH, false, HgkUnicodeMode::Precomposed), 
             "Ρ\u{0313}"); //there is no precomposed capital rho with smooth breathing
-        assert_eq!(toggle_diacritic_str("Ρ\u{0313}", HGK_SMOOTH, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("Ρ\u{0313}", HGK_SMOOTH, false, HgkUnicodeMode::Precomposed), 
             "Ρ");
-        assert_eq!(toggle_diacritic_str("Ρ\u{0313}", HGK_ROUGH, false, HgkUnicodeMode::Precomposed), 
+        assert_eq!(hgk_toggle_diacritic_str("Ρ\u{0313}", HGK_ROUGH, false, HgkUnicodeMode::Precomposed), 
             "Ῥ");
-        assert_eq!(toggle_diacritic_str("Ρ\u{0313}", HGK_ROUGH, false, HgkUnicodeMode::CombiningOnly), 
+        assert_eq!(hgk_toggle_diacritic_str("Ρ\u{0313}", HGK_ROUGH, false, HgkUnicodeMode::CombiningOnly), 
             "Ρ\u{0314}");
     }
 }
