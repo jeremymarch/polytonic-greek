@@ -283,7 +283,7 @@ COMBINING_UNDERDOT
             HGK_DIAERESIS => {
                 self.diacritics &= !(HGK_ROUGH | HGK_SMOOTH);
             },
-            //HGKDiacritics::UNDERDOT => { },
+            HGK_UNDERDOT => { },
             _ => {
                 assert!(false, "Unknown Diacritic passed")
             }
@@ -737,6 +737,9 @@ mod tests {
         assert_eq!(a1.to_string(HgkUnicodeMode::PrecomposedPUA), "\u{1FE1}");
         assert_eq!(toggle_diacritic_str("υ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{1FE1}");
+
+        assert_eq!(toggle_diacritic_str("α", HGK_UNDERDOT, false, HgkUnicodeMode::PrecomposedPUA), 
+            "\u{03B1}\u{0323}");
 
 
 
