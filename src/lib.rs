@@ -255,6 +255,8 @@ COMBINING_UNDERDOT
             self.diacritics &= !d; //turn off: rust uses !, C uses ~
             //return;
         }
+
+        //turn off clashing diacritics:
         match d {
             HGK_ROUGH => {
                 self.diacritics &= !(HGK_SMOOTH | HGK_DIAERESIS);
@@ -285,7 +287,7 @@ COMBINING_UNDERDOT
             },
             HGK_UNDERDOT => { },
             _ => {
-                assert!(false, "Unknown Diacritic passed")
+                debug_assert!(false, "Unknown Diacritic passed")
             }
         }
     }
