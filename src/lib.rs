@@ -44,7 +44,8 @@ const BREVE_AND_ACUTE:u32 = HGK_BREVE | HGK_ACUTE;
 const BREVE_AND_GRAVE:u32 = HGK_BREVE | HGK_GRAVE;
 
 fn get_pua_index(letter:char, diacritics:u32) -> i32 {
-    let i = match diacritics {
+
+    let i = match (diacritics & !HGK_IOTA_SUBSCRIPT) & !HGK_UNDERDOT {
         MACRON_AND_SMOOTH           => 0,
         MACRON_AND_SMOOTH_AND_ACUTE => 1,
         MACRON_AND_SMOOTH_AND_GRAVE => 2,
@@ -219,7 +220,16 @@ COMBINING_UNDERDOT
             HgkUnicodeMode::PrecomposedPUA => {
                 let idx = get_pua_index(self.letter, self.diacritics);
                 if (0..=47).contains(&idx) {
-                    GREEK_LOWER_PUA[idx as usize].to_string().into()
+                    s.clear();
+                    s.push( GREEK_LOWER_PUA[idx as usize] );
+
+                    if (self.diacritics & HGK_IOTA_SUBSCRIPT) == HGK_IOTA_SUBSCRIPT {
+                        s.push('\u{0345}');
+                    }
+                    if (self.diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
+                        s.push('\u{0323}');
+                    }
+                    s.into_iter().collect::<String>() 
                 }
                 else {
                     s.into_iter().nfc().collect::<String>() 
