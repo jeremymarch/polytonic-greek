@@ -4,6 +4,7 @@
 #[macro_use]
 extern crate alloc;
 use alloc::string::String;
+use alloc::string::ToString;
 
 //extern crate tinyvec;
 //use tinyvec::TinyVec;
@@ -23,6 +24,106 @@ pub const HGK_BREVE         :u32 = 0x040;
 pub const HGK_IOTA_SUBSCRIPT:u32 = 0x080;
 pub const HGK_DIAERESIS     :u32 = 0x100;
 pub const HGK_UNDERDOT      :u32 = 0x200;
+
+const MACRON_AND_SMOOTH:u32 = HGK_MACRON | HGK_SMOOTH;
+const MACRON_AND_SMOOTH_AND_ACUTE:u32 = HGK_MACRON | HGK_SMOOTH | HGK_ACUTE;
+const MACRON_AND_SMOOTH_AND_GRAVE:u32 = HGK_MACRON | HGK_SMOOTH | HGK_GRAVE;
+const MACRON_AND_ROUGH:u32 = HGK_MACRON | HGK_ROUGH;
+const MACRON_AND_ROUGH_AND_ACUTE:u32 = HGK_MACRON | HGK_ROUGH | HGK_ACUTE;
+const MACRON_AND_ROUGH_AND_GRAVE:u32 = HGK_MACRON | HGK_ROUGH | HGK_GRAVE;
+const MACRON_AND_ACUTE:u32 = HGK_MACRON | HGK_ACUTE;
+const MACRON_AND_GRAVE:u32 = HGK_MACRON | HGK_GRAVE;
+
+const BREVE_AND_SMOOTH:u32 = HGK_BREVE | HGK_SMOOTH;
+const BREVE_AND_SMOOTH_AND_ACUTE:u32 = HGK_BREVE | HGK_SMOOTH | HGK_ACUTE;
+const BREVE_AND_SMOOTH_AND_GRAVE:u32 = HGK_BREVE | HGK_SMOOTH | HGK_GRAVE;
+const BREVE_AND_ROUGH:u32 = HGK_BREVE | HGK_ROUGH;
+const BREVE_AND_ROUGH_AND_ACUTE:u32 = HGK_BREVE | HGK_ROUGH | HGK_ACUTE;
+const BREVE_AND_ROUGH_AND_GRAVE:u32 = HGK_BREVE | HGK_ROUGH | HGK_GRAVE;
+const BREVE_AND_ACUTE:u32 = HGK_BREVE | HGK_ACUTE;
+const BREVE_AND_GRAVE:u32 = HGK_BREVE | HGK_GRAVE;
+
+fn get_pua_index(letter:char, diacritics:u32) -> i32 {
+    let i = match (diacritics) {
+        MACRON_AND_SMOOTH           => 0,
+        MACRON_AND_SMOOTH_AND_ACUTE => 1,
+        MACRON_AND_SMOOTH_AND_GRAVE => 2,
+        MACRON_AND_ROUGH            => 3,
+        MACRON_AND_ROUGH_AND_ACUTE  => 4,
+        MACRON_AND_ROUGH_AND_GRAVE  => 5,
+        MACRON_AND_ACUTE            => 6,
+        MACRON_AND_GRAVE            => 7,
+        BREVE_AND_SMOOTH            => 8,
+        BREVE_AND_SMOOTH_AND_ACUTE  => 9,
+        BREVE_AND_SMOOTH_AND_GRAVE  => 10,
+        BREVE_AND_ROUGH             => 11,
+        BREVE_AND_ROUGH_AND_ACUTE   => 12,
+        BREVE_AND_ROUGH_AND_GRAVE   => 13,
+        BREVE_AND_ACUTE             => 14,
+        BREVE_AND_GRAVE             => 15,
+        _                           => -1
+    };
+
+    match (letter) {
+        'α' => i,
+        'ι' => i + (16 * 1),
+        'υ' => i + (16 * 2),
+        _ => -1
+    }
+}
+
+static GREEK_LOWER_PUA: &'static [char] = &[
+'\u{EB04}',
+'\u{EB07}',
+'\u{EAF3}',
+'\u{EB05}',
+'\u{EB09}',
+'\u{EAF4}',
+'\u{EB00}',
+'\u{EAF0}',
+'\u{EAF9}',
+'\u{EB0C}',
+'\u{EAFA}',
+'\u{EB0B}',
+'\u{EAFB}',
+'\u{EAFC}',
+'\u{EB0A}',
+'\u{EAF8}',
+
+'\u{EB3C}',
+'\u{EB3D}',
+'\u{EB54}',
+'\u{EB3E}',
+'\u{EB3F}',
+'\u{EB55}',
+'\u{EB39}',
+'\u{EB38}',
+'\u{EB41}',
+'\u{EB42}',
+'\u{EB45}',
+'\u{EB43}',
+'\u{EB47}',
+'\u{EB48}',
+'\u{EB40}',
+'\u{EB44}',
+
+'\u{EB7D}',
+'\u{EB7F}',
+'\u{EB71}',
+'\u{EB7E}',
+'\u{EB80}',
+'\u{EB75}',
+'\u{EB7A}',
+'\u{EB6F}',
+'\u{EB84}',
+'\u{EB85}',
+'\u{EB88}',
+'\u{EB82}',
+'\u{EB89}',
+'\u{EB8A}',
+'\u{EB81}',
+'\u{EB83}'
+];
 
 pub enum HgkUnicodeMode {
     Precomposed,
@@ -52,27 +153,23 @@ impl HGKLetter {
                 }
             }
             else {
-                if !unicode_normalization::char::is_combining_mark(c) {
-                    break;
-                }
-                else {
-                    match c {
-                        '\u{0300}' => diacritics |= HGK_GRAVE,
-                        '\u{0301}' => diacritics |= HGK_ACUTE,
-                        '\u{0304}' => diacritics |= HGK_MACRON,
-                        '\u{0306}' => diacritics |= HGK_BREVE,
-                        '\u{0308}' => diacritics |= HGK_DIAERESIS,
-                        '\u{0313}' => diacritics |= HGK_SMOOTH,
-                        '\u{0314}' => diacritics |= HGK_ROUGH,
-                        '\u{0323}' => diacritics |= HGK_UNDERDOT,
-                        '\u{0342}' => diacritics |= HGK_CIRCUMFLEX,
-                        '\u{0345}' => diacritics |= HGK_IOTA_SUBSCRIPT,
-                        _ => ()
-                    }
+                match c {
+                    '\u{0300}' => diacritics |= HGK_GRAVE,
+                    '\u{0301}' => diacritics |= HGK_ACUTE,
+                    '\u{0304}' => diacritics |= HGK_MACRON,
+                    '\u{0306}' => diacritics |= HGK_BREVE,
+                    '\u{0308}' => diacritics |= HGK_DIAERESIS,
+                    '\u{0313}' => diacritics |= HGK_SMOOTH,
+                    '\u{0314}' => diacritics |= HGK_ROUGH,
+                    '\u{0323}' => diacritics |= HGK_UNDERDOT,
+                    '\u{0342}' => diacritics |= HGK_CIRCUMFLEX,
+                    '\u{0345}' => diacritics |= HGK_IOTA_SUBSCRIPT,
+                    _ => break
                 }
             }
         }
-        return HGKLetter { letter: bare_letter, diacritics: diacritics };
+        
+        HGKLetter { letter: bare_letter, diacritics: diacritics }
     }
 /*
 order:
@@ -87,7 +184,7 @@ COMBINING_CIRCUMFLEX,
 COMBINING_IOTA_SUBSCRIPT, 
 COMBINING_UNDERDOT
 */
-    fn to_string(&mut self, unicode_mode:HgkUnicodeMode) -> String {
+    fn to_string(&self, unicode_mode:HgkUnicodeMode) -> String {
         let mut s = vec![self.letter];
         if (self.diacritics & HGK_MACRON) == HGK_MACRON {
             s.push('\u{0304}');
@@ -120,12 +217,24 @@ COMBINING_UNDERDOT
             s.push('\u{0323}');
         }
         match unicode_mode {
-            HgkUnicodeMode::CombiningOnly => return s.into_iter().collect::<String>(),
-            HgkUnicodeMode::PrecomposedPUA => return s.into_iter().nfc().collect::<String>(),
-            _ => return s.into_iter().nfc().collect::<String>()
+            HgkUnicodeMode::CombiningOnly => s.into_iter().collect::<String>(),
+            HgkUnicodeMode::PrecomposedPUA => { 
+                let idx = get_pua_index(self.letter, self.diacritics);
+                if (0..=47).contains(&idx) {
+                    GREEK_LOWER_PUA[idx as usize].to_string()
+                }
+                else {
+                    s.into_iter().nfc().collect::<String>() 
+                }
+            },
+            _ => s.into_iter().nfc().collect::<String>()
         }  
     }
+/*
+    fn to_string_pua(&self) -> String {
 
+    }
+*/
     fn toggle_diacritic(&mut self, d:u32, on_only:bool) {
         if !self.is_legal(d) {
             return;
@@ -197,19 +306,10 @@ COMBINING_UNDERDOT
                 self.letter.is_long_or_short()    
             },
             HGK_IOTA_SUBSCRIPT => {
-                match self.letter {
-                    'α' => true,
-                    'ω' => true,
-                    'η' => true,
-                    _ => false
-                } 
+                matches!(self.letter, 'α' | 'ω' | 'η') 
             },
             HGK_DIAERESIS => {
-                match self.letter {
-                    'ι' => true,
-                    'υ' => true,
-                    _ => false
-                }                
+                matches!(self.letter, 'ι' | 'υ')                
             },
             HGK_UNDERDOT => { 
                 true
@@ -232,13 +332,7 @@ trait HGKIsLong {
 
 impl HGKIsLong for char {
     fn is_long(&self) -> bool {
-        match self {
-            'η' => true,
-            'ω' => true,
-            'Η' => true,
-            'Ω' => true,
-            _ => false
-        }
+        matches!(self, 'η' | 'ω' | 'Η' | 'Ω')
     }
 }
 
@@ -248,13 +342,7 @@ trait HGKIsShort {
 
 impl HGKIsShort for char {
     fn is_short(&self) -> bool {
-        match self {
-            'ε' => true,
-            'ο' => true,
-            'Ε' => true,
-            'Ο' => true,
-            _ => false
-        }
+        matches!(self, 'ε' | 'ο' | 'Ε' | 'Ο')
     }
 }
 
@@ -264,15 +352,7 @@ trait HGKIsLongOrShort {
 
 impl HGKIsLongOrShort for char {
     fn is_long_or_short(&self) -> bool {
-        match self {
-            'α' => true,
-            'ι' => true,
-            'υ' => true,
-            'Α' => true,
-            'Ι' => true,
-            'Υ' => true,
-            _ => false
-        }
+        matches!(self, 'α' | 'ι' | 'υ' | 'Α' | 'Ι' | 'Υ')
     }
 }
 
@@ -283,30 +363,14 @@ trait HGKIsGreekVowel {
 impl HGKIsGreekVowel for char {
     fn is_greek_vowel(&self) -> bool {
         //let letter2 = self.to_lowercase();
-        match self {
-            'α' => true,
-            'ε' => true,
-            'η' => true,
-            'ι' => true,
-            'ο' => true,
-            'υ' => true,
-            'ω' => true,
-            'Α' => true,
-            'Ε' => true,
-            'Η' => true,
-            'Ι' => true,
-            'Ο' => true,
-            'Υ' => true,
-            'Ω' => true,
-            _ => false
-        }
+        matches!(self, 'α' | 'ε' | 'η' | 'ι' | 'ο' | 'υ' | 'ω' | 'Α' | 'Ε' | 'Η' | 'Ι' | 'Ο' | 'Υ' | 'Ω')
     }
 }
 
 pub fn toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode) -> String {
     let mut letter = HGKLetter::from_str(l);
     letter.toggle_diacritic(d, on_only);
-    return letter.to_string(mode);
+    letter.to_string(mode)
 }
 
 /*
@@ -315,6 +379,7 @@ static GREEK_PUA: &'static [(char, HGKDiacritics)] = &[
     ('\u{03B1}', HGKDiacritics::MACRON )
 ];
 */
+
 //pub(crate) const COMPOSITION_TABLE_KV: &[(u32, char)] = &[
 static GREEK_PUA: &'static [(char, u32)] = &[
     /* EAF0 */ ( '\u{03B1}', HGK_MACRON | HGK_GRAVE ),
@@ -534,14 +599,14 @@ static GREEK_LOWER: &'static [char] = &[
 ];
 
 pub fn transliterate(input:usize) -> char {
-    if input >= 0x0061 && input <= 0x007A {
-        return GREEK_LOWER[input - 0x0061];
+    if (0x0061..=0x007A).contains(&input) {
+        GREEK_LOWER[input - 0x0061]
     }
-    else if input >= 0x0041 && input <= 0x005A {
-        return GREEK_UPPER[input - 0x0041];
+    else if (0x0041..=0x005A).contains(&input) {
+        GREEK_UPPER[input - 0x0041]
     }
     else {
-        return '\u{0000}';
+        '\u{0000}'
     }
 }
 
@@ -560,6 +625,9 @@ mod tests {
         */
         //let z4 = "\u{EAF0}".nfd();
         //println!("test pua: {}", z4);
+
+        assert_eq!(MACRON_AND_SMOOTH, HGK_MACRON | HGK_SMOOTH);
+
         assert_eq!("\u{EAF0}".nfd().next(), Some('\u{EAF0}'));
         assert_eq!("\u{EAF0}".nfd().count(), 1);
 
@@ -650,6 +718,15 @@ mod tests {
 
         let s = String::from("ἄ");
         let _v: Vec<char> = s.chars().collect();
+ 
+        assert_eq!(toggle_diacritic_str("ἀ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
+            "\u{EB04}");
+        assert_eq!(toggle_diacritic_str("ἄ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
+            "\u{EB07}");
+        assert_eq!(toggle_diacritic_str("ὺ", HGK_BREVE, false, HgkUnicodeMode::PrecomposedPUA), 
+            "\u{EB83}");
+        assert_eq!(toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::PrecomposedPUA), 
+            "\u{03AC}");
 
         assert_eq!(toggle_diacritic_str("α", HGK_ACUTE, false, HgkUnicodeMode::Precomposed), 
             "\u{03AC}");//ά");

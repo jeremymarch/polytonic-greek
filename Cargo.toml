@@ -27,4 +27,5 @@ unicode-normalization = { version = "0.1.17", default-features = false }
 # features = ["alloc"]
 
 [profile.release]
+lto = true
 opt-level = "z"
