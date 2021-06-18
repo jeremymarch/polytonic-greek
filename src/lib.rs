@@ -1,10 +1,12 @@
-#![no_std]
+//#![no_std]
 #![deny(unsafe_code)]
 
 #[macro_use]
 extern crate alloc;
 use alloc::string::String;
 //use alloc::string::ToString;
+
+use core::cmp;
 
 //extern crate tinyvec;
 //use tinyvec::TinyVec;
@@ -80,10 +82,402 @@ pub enum HgkUnicodeMode {
     PrecomposedPUA
 }
 
-struct HGKLetter {
+#[derive(PartialEq, Debug)]
+pub struct HGKLetter {
     letter: char,
     diacritics: u32
 }
+
+pub trait GreekLetters {
+    fn graphemes<'a>(&'a self, is_extended: bool) -> Graphemes<'a>;
+}
+
+impl GreekLetters for str {
+    #[inline]
+    fn graphemes(&self, is_extended: bool) -> Graphemes {
+        new_graphemes(self, is_extended)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Graphemes<'a> {
+    string: &'a str,
+    cursor: GraphemeCursor,
+    cursor_back: GraphemeCursor,
+}
+
+impl<'a> Graphemes<'a> {
+    #[inline]
+    /// View the underlying data (the part yet to be iterated) as a slice of the original string.
+    ///
+    /// ```rust
+    /// # use unicode_segmentation::UnicodeSegmentation;
+    /// let mut iter = "abc".graphemes(true);
+    /// assert_eq!(iter.as_str(), "abc");
+    /// iter.next();
+    /// assert_eq!(iter.as_str(), "bc");
+    /// iter.next();
+    /// iter.next();
+    /// assert_eq!(iter.as_str(), "");
+    /// ```
+    pub fn as_str(&self) -> &'a str {
+        &self.string[self.cursor.cur_cursor()..self.cursor_back.cur_cursor()]
+    }
+}
+
+impl<'a> Iterator for Graphemes<'a> {
+    type Item = HGKLetter;
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let slen = self.cursor_back.cur_cursor() - self.cursor.cur_cursor();
+        (cmp::min(slen, 1), Some(slen))
+    }
+
+    #[inline]
+    fn next(&mut self) -> Option<HGKLetter> {
+        let start = self.cursor.cur_cursor();
+        if start == self.cursor_back.cur_cursor() {
+            return None;
+        }
+        Some(self.cursor.next_boundary(self.string, 0).unwrap().unwrap())
+    }
+}
+/*
+impl<'a> DoubleEndedIterator for Graphemes<'a> {
+    #[inline]
+    fn next_back(&mut self) -> Option<&'a str> {
+        let end = self.cursor_back.cur_cursor();
+        if end == self.cursor.cur_cursor() {
+            return None;
+        }
+        let prev = self.cursor_back.prev_boundary(self.string, 0).unwrap().unwrap();
+        Some(&self.string[prev..end])
+    }
+}
+*/
+
+// maybe unify with PairResult?
+// An enum describing information about a potential boundary.
+#[derive(PartialEq, Eq, Clone, Debug)]
+enum GraphemeState {
+    // No information is known.
+    Unknown,
+    // It is known to not be a boundary.
+    NotBreak,
+    // It is known to be a boundary.
+    Break
+}
+
+#[inline]
+pub fn new_graphemes<'b>(s: &'b str, is_extended: bool) -> Graphemes<'b> {
+    let len = s.len();
+    Graphemes {
+        string: s,
+        cursor: GraphemeCursor::new(0, len, is_extended),
+        cursor_back: GraphemeCursor::new(len, len, is_extended),
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct GraphemeCursor {
+    // Current cursor position.
+    offset: usize,
+    // Total length of the string.
+    len: usize,
+    // A config flag indicating whether this cursor computes legacy or extended
+    // grapheme cluster boundaries (enables GB9a and GB9b if set).
+    is_extended: bool,
+    // Information about the potential boundary at `offset`
+    state: GraphemeState,
+    // Category of codepoint immediately preceding cursor, if known.
+    //cat_before: Option<GraphemeCat>,
+    // Category of codepoint immediately after cursor, if known.
+    //cat_after: Option<GraphemeCat>,
+    // If set, at least one more codepoint immediately preceding this offset
+    // is needed to resolve whether there's a boundary at `offset`.
+    //pre_context_offset: Option<usize>,
+    // The number of RIS codepoints preceding `offset`. If `pre_context_offset`
+    // is set, then counts the number of RIS between that and `offset`, otherwise
+    // is an accurate count relative to the string.
+    //ris_count: Option<usize>,
+    // Set if a call to `prev_boundary` or `next_boundary` was suspended due
+    // to needing more input.
+    resuming: bool,
+    // Cached grapheme category and associated scalar value range.
+    //grapheme_cat_cache: (u32, u32, GraphemeCat),
+}
+
+/// An error return indicating that not enough content was available in the
+/// provided chunk to satisfy the query, and that more content must be provided.
+#[derive(PartialEq, Eq, Debug)]
+pub enum GraphemeIncomplete {
+    /// More pre-context is needed. The caller should call `provide_context`
+    /// with a chunk ending at the offset given, then retry the query. This
+    /// will only be returned if the `chunk_start` parameter is nonzero.
+    PreContext(usize),
+
+    /// When requesting `prev_boundary`, the cursor is moving past the beginning
+    /// of the current chunk, so the chunk before that is requested. This will
+    /// only be returned if the `chunk_start` parameter is nonzero.
+    PrevChunk,
+
+    /// When requesting `next_boundary`, the cursor is moving past the end of the
+    /// current chunk, so the chunk after that is requested. This will only be
+    /// returned if the chunk ends before the `len` parameter provided on
+    /// creation of the cursor.
+    NextChunk,  // requesting chunk following the one given
+
+    /// An error returned when the chunk given does not contain the cursor position.
+    InvalidOffset,
+}
+
+
+impl GraphemeCursor {
+    /// Create a new cursor. The string and initial offset are given at creation
+    /// time, but the contents of the string are not. The `is_extended` parameter
+    /// controls whether extended grapheme clusters are selected.
+    ///
+    /// The `offset` parameter must be on a codepoint boundary.
+    ///
+    /// ```rust
+    /// # use unicode_segmentation::GraphemeCursor;
+    /// let s = "हिन्दी";
+    /// let mut legacy = GraphemeCursor::new(0, s.len(), false);
+    /// assert_eq!(legacy.next_boundary(s, 0), Ok(Some("ह".len())));
+    /// let mut extended = GraphemeCursor::new(0, s.len(), true);
+    /// assert_eq!(extended.next_boundary(s, 0), Ok(Some("हि".len())));
+    /// ```
+    pub fn new(offset: usize, len: usize, is_extended: bool) -> GraphemeCursor {
+        let state = if offset == 0 || offset == len {
+            GraphemeState::Break
+        } else {
+            GraphemeState::Unknown
+        };
+        GraphemeCursor {
+            offset: offset,
+            len: len,
+            state: state,
+            is_extended: is_extended,
+            resuming: false
+        }
+    }
+
+    // Not sure I'm gonna keep this, the advantage over new() seems thin.
+
+    /// Set the cursor to a new location in the same string.
+    ///
+    /// ```rust
+    /// # use unicode_segmentation::GraphemeCursor;
+    /// let s = "abcd";
+    /// let mut cursor = GraphemeCursor::new(0, s.len(), false);
+    /// assert_eq!(cursor.cur_cursor(), 0);
+    /// cursor.set_cursor(2);
+    /// assert_eq!(cursor.cur_cursor(), 2);
+    /// ```
+    pub fn set_cursor(&mut self, offset: usize) {
+        if offset != self.offset {
+            self.offset = offset;
+            self.state = if offset == 0 || offset == self.len {
+                GraphemeState::Break
+            } else {
+                GraphemeState::Unknown
+            };
+            // reset state derived from text around cursor
+            //self.cat_before = None;
+            //self.cat_after = None;
+            //self.ris_count = None;
+        }
+    }
+
+    #[inline]
+    /// The current offset of the cursor. Equal to the last value provided to
+    /// `new()` or `set_cursor()`, or returned from `next_boundary()` or
+    /// `prev_boundary()`.
+    ///
+    /// ```rust
+    /// # use unicode_segmentation::GraphemeCursor;
+    /// // Two flags (🇷🇸🇮🇴), each flag is two RIS codepoints, each RIS is 4 bytes.
+    /// let flags = "\u{1F1F7}\u{1F1F8}\u{1F1EE}\u{1F1F4}";
+    /// let mut cursor = GraphemeCursor::new(4, flags.len(), false);
+    /// assert_eq!(cursor.cur_cursor(), 4);
+    /// assert_eq!(cursor.next_boundary(flags, 0), Ok(Some(8)));
+    /// assert_eq!(cursor.cur_cursor(), 8);
+    /// ```
+    pub fn cur_cursor(&self) -> usize {
+        self.offset
+    }
+
+    #[inline]
+    /// Find the next boundary after the current cursor position. Only a part of
+    /// the string need be supplied. If the chunk is incomplete, then this
+    /// method might return `GraphemeIncomplete::PreContext` or
+    /// `GraphemeIncomplete::NextChunk`. In the former case, the caller should
+    /// call `provide_context` with the requested chunk, then retry. In the
+    /// latter case, the caller should provide the chunk following the one
+    /// given, then retry.
+    ///
+    /// See `is_boundary` for expectations on the provided chunk.
+    ///
+    /// ```rust
+    /// # use unicode_segmentation::GraphemeCursor;
+    /// let flags = "\u{1F1F7}\u{1F1F8}\u{1F1EE}\u{1F1F4}";
+    /// let mut cursor = GraphemeCursor::new(4, flags.len(), false);
+    /// assert_eq!(cursor.next_boundary(flags, 0), Ok(Some(8)));
+    /// assert_eq!(cursor.next_boundary(flags, 0), Ok(Some(16)));
+    /// assert_eq!(cursor.next_boundary(flags, 0), Ok(None));
+    /// ```
+    ///
+    /// And an example that uses partial strings:
+    ///
+    /// ```rust
+    /// # use unicode_segmentation::{GraphemeCursor, GraphemeIncomplete};
+    /// let s = "abcd";
+    /// let mut cursor = GraphemeCursor::new(0, s.len(), false);
+    /// assert_eq!(cursor.next_boundary(&s[..2], 0), Ok(Some(1)));
+    /// assert_eq!(cursor.next_boundary(&s[..2], 0), Err(GraphemeIncomplete::NextChunk));
+    /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(Some(2)));
+    /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(Some(3)));
+    /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(Some(4)));
+    /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(None));
+    /// ```
+    pub fn next_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<HGKLetter>, GraphemeIncomplete> {
+
+        if self.offset == self.len {
+            return Ok(None);
+        }
+        let mut the_letter = '\u{0000}';
+        let mut diacritics:u32 = 0;
+
+        let mut iter = chunk[self.offset - chunk_start..].nfd(); //was chars()
+        let mut ch = iter.next().unwrap();
+        
+        loop {
+                if the_letter == '\u{0000}' && !unicode_normalization::char::is_combining_mark(ch) {
+                    if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
+                        //PUA conversion
+                        the_letter = GREEK_PUA[ch as usize - 0xEAF0].0;
+                        diacritics = GREEK_PUA[ch as usize - 0xEAF0].1;
+                    }
+                    else {
+                       the_letter = ch;
+                    }
+                }
+                else if unicode_normalization::char::is_combining_mark(ch) {
+                    match ch {
+                        '\u{0300}' => diacritics |= HGK_GRAVE,
+                        '\u{0301}' => diacritics |= HGK_ACUTE,
+                        '\u{0304}' => diacritics |= HGK_MACRON,
+                        '\u{0306}' => diacritics |= HGK_BREVE,
+                        '\u{0308}' => diacritics |= HGK_DIAERESIS,
+                        '\u{0313}' => diacritics |= HGK_SMOOTH,
+                        '\u{0314}' => diacritics |= HGK_ROUGH,
+                        '\u{0323}' => diacritics |= HGK_UNDERDOT,
+                        '\u{0342}' => diacritics |= HGK_CIRCUMFLEX,
+                        '\u{0345}' => diacritics |= HGK_IOTA_SUBSCRIPT,
+                        _ => {}
+                    }
+                }
+                else {
+                    //else boundary character, return
+                    return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
+                }
+                self.offset += ch.len_utf8();
+                if let Some(next_ch) = iter.next() {        
+                    ch = next_ch;
+
+                } else if self.offset == self.len {
+                    return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
+                    //return Ok(None);
+                }
+            }    
+        }
+    
+/*
+    /// Find the previous boundary after the current cursor position. Only a part
+    /// of the string need be supplied. If the chunk is incomplete, then this
+    /// method might return `GraphemeIncomplete::PreContext` or
+    /// `GraphemeIncomplete::PrevChunk`. In the former case, the caller should
+    /// call `provide_context` with the requested chunk, then retry. In the
+    /// latter case, the caller should provide the chunk preceding the one
+    /// given, then retry.
+    ///
+    /// See `is_boundary` for expectations on the provided chunk.
+    ///
+    /// ```rust
+    /// # use unicode_segmentation::GraphemeCursor;
+    /// let flags = "\u{1F1F7}\u{1F1F8}\u{1F1EE}\u{1F1F4}";
+    /// let mut cursor = GraphemeCursor::new(12, flags.len(), false);
+    /// assert_eq!(cursor.prev_boundary(flags, 0), Ok(Some(8)));
+    /// assert_eq!(cursor.prev_boundary(flags, 0), Ok(Some(0)));
+    /// assert_eq!(cursor.prev_boundary(flags, 0), Ok(None));
+    /// ```
+    ///
+    /// And an example that uses partial strings (note the exact return is not
+    /// guaranteed, and may be `PrevChunk` or `PreContext` arbitrarily):
+    ///
+    /// ```rust
+    /// # use unicode_segmentation::{GraphemeCursor, GraphemeIncomplete};
+    /// let s = "abcd";
+    /// let mut cursor = GraphemeCursor::new(4, s.len(), false);
+    /// assert_eq!(cursor.prev_boundary(&s[2..4], 2), Ok(Some(3)));
+    /// assert_eq!(cursor.prev_boundary(&s[2..4], 2), Err(GraphemeIncomplete::PrevChunk));
+    /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(2)));
+    /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(1)));
+    /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(0)));
+    /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(None));
+    /// ```
+    pub fn prev_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<usize>, GraphemeIncomplete> {
+        if self.offset == 0 {
+            return Ok(None);
+        }
+        if self.offset == chunk_start {
+            return Err(GraphemeIncomplete::PrevChunk);
+        }
+        let mut iter = chunk[..self.offset - chunk_start].chars().rev();
+        let mut ch = iter.next().unwrap();
+        loop {
+            if self.offset == chunk_start {
+                self.resuming = true;
+                return Err(GraphemeIncomplete::PrevChunk);
+            }
+            if self.resuming {
+                self.cat_before = Some(self.grapheme_category(ch));
+            } else {
+                self.offset -= ch.len_utf8();
+                self.cat_after = self.cat_before.take();
+                self.state = GraphemeState::Unknown;
+                if let Some(ris_count) = self.ris_count {
+                    self.ris_count = if ris_count > 0 { Some(ris_count - 1) } else { None };
+                }
+                if let Some(prev_ch) = iter.next() {
+                    ch = prev_ch;
+                    self.cat_before = Some(self.grapheme_category(ch));
+                } else if self.offset == 0 {
+                    self.decide(true);
+                } else {
+                    self.resuming = true;
+                    self.cat_after = Some(self.grapheme_category(ch));
+                    return Err(GraphemeIncomplete::PrevChunk);
+                }
+            }
+            self.resuming = true;
+            if self.is_boundary(chunk, chunk_start)? {
+                self.resuming = false;
+                return Ok(Some(self.offset));
+            }
+            self.resuming = false;
+        }
+    }
+}
+*/
+}
+/************************************************/
+
+
+
+
+
 
 impl HGKLetter {
     fn from_str(l:&str) -> HGKLetter {
@@ -629,13 +1023,33 @@ mod tests {
 
     #[test]
     fn mytest() {
+
+        let mut aaa = "άβγ".graphemes(true);
+        assert_eq!(aaa.next().unwrap().letter, 'α');
+        assert_eq!(aaa.next().unwrap().letter, 'β');
+        assert_eq!(aaa.next().unwrap().letter, 'γ');
+        assert_eq!(aaa.next(), None);
+
+        let s = "αβγ";
+        let g = s.graphemes(true).collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:0},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'γ', diacritics:0} ];
+        assert_eq!(g, b);
+
         /*
+        strip
+        convert
+        compare
+
+
         let s = "ἄβί".to_string();
         let a = s.nfd();
         assert_eq!(a.count(), 6);
         */
         //let z4 = "\u{EAF0}".nfd();
         //println!("test pua: {}", z4);
+
+        //let str = "ἄλφά";
+        //let str2 = str.nfd().chars().iter().filter(|x| !unicode_normalization::char::is_combining_mark(x))
 
         assert_eq!(GREEK_LOWER_PUA.len() as i32 - 1, 47);
 
