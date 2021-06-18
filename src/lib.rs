@@ -387,6 +387,7 @@ impl GraphemeCursor {
                     ch = next_ch;
 
                 } else if self.offset == self.len {
+                    //at the end
                     return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
                     //return Ok(None);
                 }
@@ -1033,6 +1034,21 @@ mod tests {
         let s = "αβγ";
         let g = s.graphemes(true).collect::<Vec<HGKLetter>>();
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:0},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'γ', diacritics:0} ];
+        assert_eq!(g, b);
+
+        let s = "ᾱ̓́";
+        let g = s.graphemes(true).collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH} ];
+        assert_eq!(g, b);
+
+        let s = "\u{EB07}";
+        let g = s.graphemes(true).collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH} ];
+        assert_eq!(g, b);
+
+        let s = "\u{EB07}";
+        let g = s.graphemes(true).map(|a| a.diacritics = 0).collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:0} ];
         assert_eq!(g, b);
 
         /*
