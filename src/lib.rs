@@ -15,17 +15,8 @@ use core::cmp;
 extern crate unicode_normalization;
 use unicode_normalization::UnicodeNormalization;
 
-pub const HGK_NO_DIACRITICS :u32 = 0x000;
-pub const HGK_ROUGH         :u32 = 0x001;
-pub const HGK_SMOOTH        :u32 = 0x002;
-pub const HGK_ACUTE         :u32 = 0x004;
-pub const HGK_GRAVE         :u32 = 0x008;
-pub const HGK_CIRCUMFLEX    :u32 = 0x010;
-pub const HGK_MACRON        :u32 = 0x020;
-pub const HGK_BREVE         :u32 = 0x040;
-pub const HGK_IOTA_SUBSCRIPT:u32 = 0x080;
-pub const HGK_DIAERESIS     :u32 = 0x100;
-pub const HGK_UNDERDOT      :u32 = 0x200;
+pub use crate::tables::*;
+mod tables;
 
 const MACRON_AND_SMOOTH:u32 = HGK_MACRON | HGK_SMOOTH;
 const MACRON_AND_SMOOTH_AND_ACUTE:u32 = HGK_MACRON | HGK_SMOOTH | HGK_ACUTE;
@@ -89,25 +80,27 @@ pub struct HGKLetter {
 }
 
 pub trait GreekLetters {
-    fn graphemes<'a>(&'a self, is_extended: bool) -> Graphemes<'a>;
+    fn gkletters<'a>(&'a self) -> Graphemes;
 }
 
 impl GreekLetters for str {
     #[inline]
-    fn graphemes(&self, is_extended: bool) -> Graphemes {
-        new_graphemes(self, is_extended)
+    fn gkletters(&self) -> Graphemes {
+        new_gkletters(self)
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct Graphemes<'a> {
-    string: &'a str,
+pub struct Graphemes {
+    string: String,
     cursor: GraphemeCursor,
     cursor_back: GraphemeCursor,
 }
 
-impl<'a> Graphemes<'a> {
+impl Graphemes {
+    /*
     #[inline]
+
     /// View the underlying data (the part yet to be iterated) as a slice of the original string.
     ///
     /// ```rust
@@ -120,12 +113,13 @@ impl<'a> Graphemes<'a> {
     /// iter.next();
     /// assert_eq!(iter.as_str(), "");
     /// ```
-    pub fn as_str(&self) -> &'a str {
-        &self.string[self.cursor.cur_cursor()..self.cursor_back.cur_cursor()]
-    }
+    ///pub fn as_str(&self) -> &'a str {
+    ///    &self.string[self.cursor.cur_cursor()..self.cursor_back.cur_cursor()]
+    ///}
+    */
 }
 
-impl<'a> Iterator for Graphemes<'a> {
+impl<'a> Iterator for Graphemes {
     type Item = HGKLetter;
 
     #[inline]
@@ -140,7 +134,11 @@ impl<'a> Iterator for Graphemes<'a> {
         if start == self.cursor_back.cur_cursor() {
             return None;
         }
-        Some(self.cursor.next_boundary(self.string, 0).unwrap().unwrap())
+
+        let r = self.cursor.next_boundary(&self.string, 0);
+        println!("next: {} {} {}", start, self.cursor_back.cur_cursor(), r.as_ref().unwrap().as_ref().unwrap().letter);
+
+        Some(r.unwrap().unwrap())
     }
 }
 /*
@@ -170,12 +168,14 @@ enum GraphemeState {
 }
 
 #[inline]
-pub fn new_graphemes<'b>(s: &'b str, is_extended: bool) -> Graphemes<'b> {
-    let len = s.len();
+pub fn new_gkletters<'b>(s: &'b str) -> Graphemes {
+    let a = s.nfd().collect::<String>();
+    let len = a.len();
+    println!("len gkletters: {}", len);
     Graphemes {
-        string: s,
-        cursor: GraphemeCursor::new(0, len, is_extended),
-        cursor_back: GraphemeCursor::new(len, len, is_extended),
+        string: a,
+        cursor: GraphemeCursor::new(0, len),
+        cursor_back: GraphemeCursor::new(len, len),
     }
 }
 
@@ -185,9 +185,6 @@ pub struct GraphemeCursor {
     offset: usize,
     // Total length of the string.
     len: usize,
-    // A config flag indicating whether this cursor computes legacy or extended
-    // grapheme cluster boundaries (enables GB9a and GB9b if set).
-    is_extended: bool,
     // Information about the potential boundary at `offset`
     state: GraphemeState,
     // Category of codepoint immediately preceding cursor, if known.
@@ -248,7 +245,7 @@ impl GraphemeCursor {
     /// let mut extended = GraphemeCursor::new(0, s.len(), true);
     /// assert_eq!(extended.next_boundary(s, 0), Ok(Some("हि".len())));
     /// ```
-    pub fn new(offset: usize, len: usize, is_extended: bool) -> GraphemeCursor {
+    pub fn new(offset: usize, len: usize) -> GraphemeCursor {
         let state = if offset == 0 || offset == len {
             GraphemeState::Break
         } else {
@@ -258,7 +255,6 @@ impl GraphemeCursor {
             offset: offset,
             len: len,
             state: state,
-            is_extended: is_extended,
             resuming: false
         }
     }
@@ -341,16 +337,18 @@ impl GraphemeCursor {
     /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(Some(4)));
     /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(None));
     /// ```
-    pub fn next_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<HGKLetter>, GraphemeIncomplete> {
+    pub fn next_boundary(&mut self, chunk: &String, chunk_start: usize) -> Result<Option<HGKLetter>, GraphemeIncomplete> {
 
-        if self.offset == self.len {
+        if self.offset >= self.len {
+            println!("herehere: {}", self.offset);
             return Ok(None);
         }
         let mut the_letter = '\u{0000}';
         let mut diacritics:u32 = 0;
 
-        let mut iter = chunk[self.offset - chunk_start..].nfd(); //was chars()
+        let mut iter = chunk[self.offset - chunk_start..].chars(); //nfd()
         let mut ch = iter.next().unwrap();
+        println!("next boundary: offset: {} {}", self.offset, ch);
         
         loop {
                 if the_letter == '\u{0000}' && !unicode_normalization::char::is_combining_mark(ch) {
@@ -379,9 +377,11 @@ impl GraphemeCursor {
                     }
                 }
                 else {
+                    //self.offset += ch.len_utf8();
                     //else boundary character, return
                     return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
                 }
+
                 self.offset += ch.len_utf8();
                 if let Some(next_ch) = iter.next() {        
                     ch = next_ch;
@@ -389,7 +389,11 @@ impl GraphemeCursor {
                 } else if self.offset == self.len {
                     //at the end
                     return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
+                    println!("herehere2: {}", self.offset);
                     //return Ok(None);
+                }
+                else {
+                    return Ok(None);
                 }
             }    
         }
@@ -722,6 +726,12 @@ impl HGKIsGreekVowel for char {
     }
 }
 
+pub fn hgk_strip_diacritics(l:&str) -> String {
+    let b = l.gkletters();
+    println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
+    l.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:0}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>()
+}
+
 pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode) -> String {
     let mut letter = HGKLetter::from_str(l);
     letter.toggle_diacritic(d, on_only);
@@ -734,275 +744,6 @@ static GREEK_PUA: &'static [(char, HGKDiacritics)] = &[
     ('\u{03B1}', HGKDiacritics::MACRON )
 ];
 */
-
-const GREEK_LOWER_PUA: &[char] = &[
-'\u{EB04}',//alpha
-'\u{EB07}',
-'\u{EAF3}',
-'\u{EB05}',
-'\u{EB09}',
-'\u{EAF4}',
-'\u{EB00}',
-'\u{EAF0}',
-'\u{EAF9}',
-'\u{EB0C}',
-'\u{EAFA}',
-'\u{EB0B}',
-'\u{EAFB}',
-'\u{EAFC}',
-'\u{EB0A}',
-'\u{EAF8}',
-'\u{EB3C}',//iota
-'\u{EB3D}',
-'\u{EB54}',
-'\u{EB3E}',
-'\u{EB3F}',
-'\u{EB55}',
-'\u{EB39}',
-'\u{EB38}',
-'\u{EB41}',
-'\u{EB42}',
-'\u{EB45}',
-'\u{EB43}',
-'\u{EB47}',
-'\u{EB48}',
-'\u{EB40}',
-'\u{EB44}',
-'\u{EB7D}',//upsilon
-'\u{EB7F}',
-'\u{EB71}',
-'\u{EB7E}',
-'\u{EB80}',
-'\u{EB75}',
-'\u{EB7A}',
-'\u{EB6F}',
-'\u{EB84}',
-'\u{EB85}',
-'\u{EB88}',
-'\u{EB82}',
-'\u{EB89}',
-'\u{EB8A}',
-'\u{EB81}',
-'\u{EB83}'
-];
-
-//pub(crate) const COMPOSITION_TABLE_KV: &[(u32, char)] = &[
-const GREEK_PUA: &[(char, u32)] = &[
-    /* EAF0 */ ( '\u{03B1}', HGK_MACRON | HGK_GRAVE ),
-    /* EAF1 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EAF2 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EAF3 */ ( '\u{03B1}', HGK_MACRON | HGK_SMOOTH | HGK_GRAVE ),
-    /* EAF4 */ ( '\u{03B1}', HGK_MACRON | HGK_ROUGH | HGK_GRAVE ),
-    /* EAF5 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EAF6 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EAF7 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EAF8 */ ( '\u{03B1}', HGK_BREVE | HGK_GRAVE ),
-    /* EAF9 */ ( '\u{03B1}', HGK_BREVE | HGK_SMOOTH ),
-    /* EAFA */ ( '\u{03B1}', HGK_BREVE | HGK_SMOOTH | HGK_GRAVE ),
-    /* EAFB */ ( '\u{03B1}', HGK_BREVE | HGK_ROUGH | HGK_ACUTE ),
-    /* EAFC */ ( '\u{03B1}', HGK_BREVE | HGK_ROUGH | HGK_GRAVE ),
-    /* EAFD */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EAFE */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EAFF */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB00 */ ( '\u{03B1}', HGK_MACRON | HGK_ACUTE ),
-    /* EB01 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB02 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB03 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB04 */ ( '\u{03B1}', HGK_MACRON | HGK_SMOOTH ),
-    /* EB05 */ ( '\u{03B1}', HGK_MACRON | HGK_ROUGH ),
-    /* EB06 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB07 */ ( '\u{03B1}', HGK_MACRON | HGK_SMOOTH | HGK_ACUTE ),
-    /* EB08 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB09 */ ( '\u{03B1}', HGK_MACRON | HGK_ROUGH | HGK_ACUTE ),
-    /* EB0A */ ( '\u{03B1}', HGK_BREVE | HGK_ACUTE ),
-    /* EB0B */ ( '\u{03B1}', HGK_BREVE | HGK_ROUGH ),
-    /* EB0C */ ( '\u{03B1}', HGK_BREVE | HGK_SMOOTH | HGK_ACUTE ),
-    /* EB0D */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB0E */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB0F */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB10 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB11 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB12 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB13 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB14 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB15 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB16 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB17 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB18 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB19 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB1A */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB1B */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB1C */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB1D */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB1E */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB1F */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB20 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB21 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB22 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB23 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB24 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB25 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB26 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB27 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB28 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB29 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB2A */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB2B */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB2C */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB2D */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB2E */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB2F */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB30 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB31 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB32 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB33 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB34 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB35 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB36 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB37 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB38 */ ( '\u{03B9}', HGK_MACRON | HGK_GRAVE ),
-    /* EB39 */ ( '\u{03B9}', HGK_MACRON | HGK_ACUTE ),
-    /* EB3A */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB3B */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB3C */ ( '\u{03B9}', HGK_MACRON | HGK_SMOOTH ),
-    /* EB3D */ ( '\u{03B9}', HGK_MACRON | HGK_SMOOTH | HGK_ACUTE ),
-    /* EB3E */ ( '\u{03B9}', HGK_MACRON | HGK_ROUGH ),
-    /* EB3F */ ( '\u{03B9}', HGK_MACRON | HGK_ROUGH | HGK_ACUTE ),
-    /* EB40 */ ( '\u{03B9}', HGK_BREVE | HGK_ACUTE ),
-    /* EB41 */ ( '\u{03B9}', HGK_BREVE | HGK_SMOOTH ),
-    /* EB42 */ ( '\u{03B9}', HGK_BREVE | HGK_SMOOTH | HGK_ACUTE ),
-    /* EB43 */ ( '\u{03B9}', HGK_BREVE | HGK_ROUGH ),
-    /* EB44 */ ( '\u{03B9}', HGK_BREVE | HGK_GRAVE ),
-    /* EB45 */ ( '\u{03B9}', HGK_BREVE | HGK_SMOOTH | HGK_GRAVE ),
-    /* EB46 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB47 */ ( '\u{03B9}', HGK_BREVE | HGK_ROUGH | HGK_ACUTE ),
-    /* EB48 */ ( '\u{03B9}', HGK_BREVE | HGK_ROUGH | HGK_GRAVE ),
-    /* EB49 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB4A */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB4B */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB4C */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB4D */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB4E */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB4F */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB50 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB51 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB52 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB53 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB54 */ ( '\u{03B9}', HGK_MACRON | HGK_SMOOTH | HGK_GRAVE ),
-    /* EB55 */ ( '\u{03B9}', HGK_MACRON | HGK_ROUGH | HGK_GRAVE ),
-    /* EB56 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB57 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB58 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB59 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB5A */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB5B */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB5C */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB5D */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB5E */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB5F */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB60 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB61 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB62 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB63 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB64 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB65 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB66 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB67 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB68 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB69 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB6A */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB6B */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB6C */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB6D */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB6E */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB6F */ ( '\u{03C5}', HGK_MACRON | HGK_GRAVE ),
-    /* EB70 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB71 */ ( '\u{03C5}', HGK_MACRON | HGK_SMOOTH | HGK_GRAVE ),
-    /* EB72 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB73 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB74 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB75 */ ( '\u{03C5}', HGK_MACRON | HGK_ROUGH | HGK_GRAVE ),
-    /* EB76 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB77 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB78 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB79 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB7A */ ( '\u{03C5}', HGK_MACRON | HGK_ACUTE ),
-    /* EB7B */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB7C */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB7D */ ( '\u{03C5}', HGK_MACRON | HGK_SMOOTH ),
-    /* EB7E */ ( '\u{03C5}', HGK_MACRON | HGK_ROUGH ),
-    /* EB7F */ ( '\u{03C5}', HGK_MACRON | HGK_SMOOTH | HGK_ACUTE ),
-    /* EB80 */ ( '\u{03C5}', HGK_MACRON | HGK_ROUGH | HGK_ACUTE ),
-
-    /* EB81 */ ( '\u{03C5}', HGK_BREVE | HGK_ACUTE ),
-    /* EB82 */ ( '\u{03C5}', HGK_BREVE | HGK_ROUGH ),
-    /* EB83 */ ( '\u{03C5}', HGK_BREVE | HGK_GRAVE ),
-    /* EB84 */ ( '\u{03C5}', HGK_BREVE | HGK_SMOOTH ),
-    /* EB85 */ ( '\u{03C5}', HGK_BREVE | HGK_SMOOTH | HGK_ACUTE ),
-    /* EB86 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB87 */ ( '\u{0000}', HGK_NO_DIACRITICS),
-    /* EB88 */ ( '\u{03C5}', HGK_BREVE | HGK_SMOOTH | HGK_GRAVE ),
-    /* EB89 */ ( '\u{03C5}', HGK_BREVE | HGK_ROUGH | HGK_ACUTE ),
-    /* EB8A */ ( '\u{03C5}', HGK_BREVE | HGK_ROUGH | HGK_GRAVE )
-];
-
-const GREEK_UPPER: &[char] = &[
-'\u{0391}',
-'\u{0392}',
-'\u{03A8}',
-'\u{0394}',
-'\u{0395}',
-'\u{03A6}',
-'\u{0393}',
-'\u{0397}',
-'\u{0399}',
-'\u{039E}',
-'\u{039A}',
-'\u{039B}',
-'\u{039C}',
-'\u{039D}',
-'\u{039F}',
-'\u{03A0}',
-'\u{03DC}',
-'\u{03A1}',
-'\u{03A3}',
-'\u{03A4}',
-'\u{0398}',
-'\u{03A9}',
-'\u{00B7}',
-'\u{03A7}',
-'\u{03A5}',
-'\u{0396}'
-];
-
-const GREEK_LOWER: &[char] = &[
-'\u{03B1}',
-'\u{03B2}',
-'\u{03C8}',
-'\u{03B4}',
-'\u{03B5}',
-'\u{03C6}',
-'\u{03B3}',
-'\u{03B7}',
-'\u{03B9}',
-'\u{03BE}',
-'\u{03BA}',
-'\u{03BB}',
-'\u{03BC}',
-'\u{03BD}',
-'\u{03BF}',
-'\u{03C0}',
-'\u{03DD}',
-'\u{03C1}',
-'\u{03C3}',
-'\u{03C4}',
-'\u{03B8}',
-'\u{03C9}',
-'\u{03C2}',
-'\u{03C7}',
-'\u{03C5}',
-'\u{03B6}'
-];
 
 pub fn hgk_transliterate(input:usize) -> char {
     if (0x0061..=0x007A).contains(&input) {
@@ -1021,35 +762,99 @@ mod tests {
     use super::*;
     use unicode_normalization::char::compose;
     use alloc::vec::Vec;
+    use csv;
+    use std::error::Error;
+    use std::path::Path;
+    use hex::decode;
+    use std::str;
+
+    fn docsvtest() -> Result<(), Box<dyn Error>> {
+        //println!("{:?}", env::current_dir().unwrap());
+        let csvfile = "gktest.csv";
+        if !Path::new(csvfile).is_file() {
+            Err("CSV file does not exist")? //or: return Err("Bad request".into());
+        }
+
+        let mut rdr = csv::Reader::from_path(csvfile)?; //Reader::from_reader(io::stdin());
+        for result in rdr.records() {
+            // The iterator yields Result<StringRecord, Error>, so we check the error here.
+            let record = result?;
+            //println!("{:?}", &record[3]);
+            
+            let v: Vec<_> = record[0].split([' '].as_ref()).collect();
+            println!("{:?}", v);
+            //let v2:Vec<u8> = v.iter().map(hex::decode).collect();
+            //println!("{:?}", v2);
+
+/*
+            let s = record[0].replace(" ", "");
+            let s2 = hex::decode("03B1").unwrap();
+            println!("{:?} - {:?}", &s2, String::from_utf16(&s2) );
+            */
+        }
+
+
+
+        Ok(())
+    }
 
     #[test]
     fn mytest() {
+        //println!("{:?}", env::current_dir().unwrap());
 
-        let mut aaa = "άβγ".graphemes(true);
+        let s = "ᾱ̓́βἄ";//"\u{EB07}βἄ";
+        let g = s.gkletters().collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
+        
+        println!("{:?}", g);
+        println!("{:?}", b);
+        assert_eq!(g, b);
+
+        /*
+        match docsvtest() {
+            Ok(()) => (),
+            Err(error) => panic!("Error: {:?}", error)
+        };
+
+        
+        let mut aaa = "άβγ".gkletters();
         assert_eq!(aaa.next().unwrap().letter, 'α');
         assert_eq!(aaa.next().unwrap().letter, 'β');
         assert_eq!(aaa.next().unwrap().letter, 'γ');
         assert_eq!(aaa.next(), None);
 
         let s = "αβγ";
-        let g = s.graphemes(true).collect::<Vec<HGKLetter>>();
+        let g = s.gkletters().collect::<Vec<HGKLetter>>();
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:0},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'γ', diacritics:0} ];
         assert_eq!(g, b);
 
         let s = "ᾱ̓́";
-        let g = s.graphemes(true).collect::<Vec<HGKLetter>>();
+        let g = s.gkletters().collect::<Vec<HGKLetter>>();
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH} ];
         assert_eq!(g, b);
 
         let s = "\u{EB07}";
-        let g = s.graphemes(true).collect::<Vec<HGKLetter>>();
+        let g = s.gkletters().collect::<Vec<HGKLetter>>();
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH} ];
         assert_eq!(g, b);
 
-        let s = "\u{EB07}";
-        let g = s.graphemes(true).map(|a| a.diacritics = 0).collect::<Vec<HGKLetter>>();
-        let b: &[_] = &[HGKLetter{letter:'α', diacritics:0} ];
+        let s = "\u{EB07}βἄ";
+        let g = s.gkletters().collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
         assert_eq!(g, b);
+
+        let s = "\u{EB07}βᾱ";
+        let xxx = s.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:0} ).collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:0},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:0} ];
+        assert_eq!(xxx, b);
+
+        let s = "\u{EB07}βἄ";
+        let xxx = s.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:0}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>();
+        assert_eq!(xxx, "αβα");
+*/
+        //assert_eq!(hgk_strip_diacritics("ἄβ"), "ἄβ");
+        
+
 
         /*
         strip
@@ -1170,6 +975,7 @@ mod tests {
         assert_eq!(a1.diacritics, HGK_MACRON);
         assert_eq!(get_pua_index(a1.letter, a1.diacritics), -1);
         assert_eq!(a1.to_string(HgkUnicodeMode::PrecomposedPUA), "\u{1FE1}");
+
         assert_eq!(hgk_toggle_diacritic_str("υ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{1FE1}");
 

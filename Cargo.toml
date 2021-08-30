@@ -22,6 +22,10 @@ doctest = false # don't run Doc-tests for now
 [dependencies]
 unicode-normalization = { version = "0.1.17", default-features = false }
 
+[dev-dependencies]
+csv = "1.1"
+hex = "0.3.0"
+
 # [dependencies.tinyvec]
 # version = "1"
 # features = ["alloc"]
