@@ -137,7 +137,7 @@ impl<'a> Iterator for Graphemes {
         }
 
         let r = self.cursor.next_boundary(&self.string, 0);
-        println!("next: {} {} {}", start, self.cursor_back.cur_cursor(), r.as_ref().unwrap().as_ref().unwrap().letter);
+        //println!("next: {} {} {}", start, self.cursor_back.cur_cursor(), r.as_ref().unwrap().as_ref().unwrap().letter);
 
         Some(r.unwrap().unwrap())
     }
@@ -172,7 +172,7 @@ enum GraphemeState {
 pub fn new_gkletters<'b>(s: &'b str) -> Graphemes {
     let a = s.nfd().collect::<String>();
     let len = a.len();
-    println!("len gkletters: {}", len);
+    //println!("len gkletters: {}", len);
     Graphemes {
         string: a,
         cursor: GraphemeCursor::new(0, len),
@@ -341,7 +341,7 @@ impl GraphemeCursor {
     pub fn next_boundary(&mut self, chunk: &String, chunk_start: usize) -> Result<Option<HGKLetter>, GraphemeIncomplete> {
 
         if self.offset >= self.len {
-            println!("herehere: {}", self.offset);
+            //println!("herehere: {}", self.offset);
             return Ok(None);
         }
         let mut the_letter = '\u{0000}';
@@ -349,7 +349,7 @@ impl GraphemeCursor {
 
         let mut iter = chunk[self.offset - chunk_start..].nfd();//chars(); //
         let mut ch = iter.next().unwrap();
-        println!("next boundary: offset: {} {}", self.offset, ch);
+        //println!("next boundary: offset: {} {}", self.offset, ch);
         
         loop {
                 if the_letter == '\u{0000}' && !unicode_normalization::char::is_combining_mark(ch) {
@@ -389,7 +389,7 @@ impl GraphemeCursor {
 
                 } else if self.offset == self.len {
                     //at the end
-                    println!("herehere2: {}", self.offset);
+                    //println!("herehere2: {}", self.offset);
                     //return Ok(None);
                     return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
                 }
@@ -772,8 +772,8 @@ mod tests {
     use csv;
     use std::error::Error;
     use std::path::Path;
-    use hex::decode;
-    use std::str;
+    //use hex::decode;
+    //use std::str;
 
     fn docsvtest() -> Result<(), Box<dyn Error>> {
         //println!("{:?}", env::current_dir().unwrap());
