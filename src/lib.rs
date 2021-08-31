@@ -188,19 +188,6 @@ pub struct GraphemeCursor {
     len: usize,
     // Information about the potential boundary at `offset`
     state: GraphemeState,
-    // Category of codepoint immediately preceding cursor, if known.
-    //cat_before: Option<GraphemeCat>,
-    // Category of codepoint immediately after cursor, if known.
-    //cat_after: Option<GraphemeCat>,
-    // If set, at least one more codepoint immediately preceding this offset
-    // is needed to resolve whether there's a boundary at `offset`.
-    //pre_context_offset: Option<usize>,
-    // The number of RIS codepoints preceding `offset`. If `pre_context_offset`
-    // is set, then counts the number of RIS between that and `offset`, otherwise
-    // is an accurate count relative to the string.
-    //ris_count: Option<usize>,
-    // Set if a call to `prev_boundary` or `next_boundary` was suspended due
-    // to needing more input.
     resuming: bool,
     // Cached grapheme category and associated scalar value range.
     //grapheme_cat_cache: (u32, u32, GraphemeCat),
@@ -232,20 +219,6 @@ pub enum GraphemeIncomplete {
 
 
 impl GraphemeCursor {
-    /// Create a new cursor. The string and initial offset are given at creation
-    /// time, but the contents of the string are not. The `is_extended` parameter
-    /// controls whether extended grapheme clusters are selected.
-    ///
-    /// The `offset` parameter must be on a codepoint boundary.
-    ///
-    /// ```rust
-    /// # use unicode_segmentation::GraphemeCursor;
-    /// let s = "हिन्दी";
-    /// let mut legacy = GraphemeCursor::new(0, s.len(), false);
-    /// assert_eq!(legacy.next_boundary(s, 0), Ok(Some("ह".len())));
-    /// let mut extended = GraphemeCursor::new(0, s.len(), true);
-    /// assert_eq!(extended.next_boundary(s, 0), Ok(Some("हि".len())));
-    /// ```
     pub fn new(offset: usize, len: usize) -> GraphemeCursor {
         let state = if offset == 0 || offset == len {
             GraphemeState::Break
@@ -261,17 +234,7 @@ impl GraphemeCursor {
     }
 
     // Not sure I'm gonna keep this, the advantage over new() seems thin.
-
     /// Set the cursor to a new location in the same string.
-    ///
-    /// ```rust
-    /// # use unicode_segmentation::GraphemeCursor;
-    /// let s = "abcd";
-    /// let mut cursor = GraphemeCursor::new(0, s.len(), false);
-    /// assert_eq!(cursor.cur_cursor(), 0);
-    /// cursor.set_cursor(2);
-    /// assert_eq!(cursor.cur_cursor(), 2);
-    /// ```
     pub fn set_cursor(&mut self, offset: usize) {
         if offset != self.offset {
             self.offset = offset;
@@ -280,10 +243,6 @@ impl GraphemeCursor {
             } else {
                 GraphemeState::Unknown
             };
-            // reset state derived from text around cursor
-            //self.cat_before = None;
-            //self.cat_after = None;
-            //self.ris_count = None;
         }
     }
 
@@ -291,53 +250,11 @@ impl GraphemeCursor {
     /// The current offset of the cursor. Equal to the last value provided to
     /// `new()` or `set_cursor()`, or returned from `next_boundary()` or
     /// `prev_boundary()`.
-    ///
-    /// ```rust
-    /// # use unicode_segmentation::GraphemeCursor;
-    /// // Two flags (🇷🇸🇮🇴), each flag is two RIS codepoints, each RIS is 4 bytes.
-    /// let flags = "\u{1F1F7}\u{1F1F8}\u{1F1EE}\u{1F1F4}";
-    /// let mut cursor = GraphemeCursor::new(4, flags.len(), false);
-    /// assert_eq!(cursor.cur_cursor(), 4);
-    /// assert_eq!(cursor.next_boundary(flags, 0), Ok(Some(8)));
-    /// assert_eq!(cursor.cur_cursor(), 8);
-    /// ```
     pub fn cur_cursor(&self) -> usize {
         self.offset
     }
 
     #[inline]
-    /// Find the next boundary after the current cursor position. Only a part of
-    /// the string need be supplied. If the chunk is incomplete, then this
-    /// method might return `GraphemeIncomplete::PreContext` or
-    /// `GraphemeIncomplete::NextChunk`. In the former case, the caller should
-    /// call `provide_context` with the requested chunk, then retry. In the
-    /// latter case, the caller should provide the chunk following the one
-    /// given, then retry.
-    ///
-    /// See `is_boundary` for expectations on the provided chunk.
-    ///
-    /// ```rust
-    /// # use unicode_segmentation::GraphemeCursor;
-    /// let flags = "\u{1F1F7}\u{1F1F8}\u{1F1EE}\u{1F1F4}";
-    /// let mut cursor = GraphemeCursor::new(4, flags.len(), false);
-    /// assert_eq!(cursor.next_boundary(flags, 0), Ok(Some(8)));
-    /// assert_eq!(cursor.next_boundary(flags, 0), Ok(Some(16)));
-    /// assert_eq!(cursor.next_boundary(flags, 0), Ok(None));
-    /// ```
-    ///
-    /// And an example that uses partial strings:
-    ///
-    /// ```rust
-    /// # use unicode_segmentation::{GraphemeCursor, GraphemeIncomplete};
-    /// let s = "abcd";
-    /// let mut cursor = GraphemeCursor::new(0, s.len(), false);
-    /// assert_eq!(cursor.next_boundary(&s[..2], 0), Ok(Some(1)));
-    /// assert_eq!(cursor.next_boundary(&s[..2], 0), Err(GraphemeIncomplete::NextChunk));
-    /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(Some(2)));
-    /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(Some(3)));
-    /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(Some(4)));
-    /// assert_eq!(cursor.next_boundary(&s[2..4], 2), Ok(None));
-    /// ```
     pub fn next_boundary(&mut self, chunk: &String, chunk_start: usize) -> Result<Option<HGKLetter>, GraphemeIncomplete> {
 
         if self.offset >= self.len {
@@ -744,14 +661,11 @@ pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode
     letter.toggle_diacritic(d, on_only);
     letter.to_string(mode)
 }
-
 /*
-//const UCS2 puaGreekLookUp[][2] = {
-static GREEK_PUA: &'static [(char, HGKDiacritics)] = &[
-    ('\u{03B1}', HGKDiacritics::MACRON )
-];
-*/
+fn accent_recessive(s:&str) -> String {
 
+}
+*/
 pub fn hgk_transliterate(input:usize) -> char {
     if (0x0061..=0x007A).contains(&input) {
         GREEK_LOWER[input - 0x0061]
