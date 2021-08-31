@@ -346,7 +346,7 @@ impl GraphemeCursor {
         let mut the_letter = '\u{0000}';
         let mut diacritics:u32 = 0;
 
-        let mut iter = chunk[self.offset - chunk_start..].chars(); //nfd()
+        let mut iter = chunk[self.offset - chunk_start..].nfd();//chars(); //
         let mut ch = iter.next().unwrap();
         println!("next boundary: offset: {} {}", self.offset, ch);
         
@@ -810,12 +810,28 @@ mod tests {
         println!("{:?}", b);
         assert_eq!(g, b);
 
+        let s = "\u{EB07}βἄ";//"ᾱ̓́βἄ";//
+        let g = s.gkletters().collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
+        
+        println!("{:?}", g);
+        println!("{:?}", b);
+        assert_eq!(g, b);
+
+        let s = "\u{1F04}βἄ";//"ᾱ̓́βἄ";//
+        let g = s.gkletters().collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
+        
+        println!("{:?}", g);
+        println!("{:?}", b);
+        assert_eq!(g, b);
+
         /*
         match docsvtest() {
             Ok(()) => (),
             Err(error) => panic!("Error: {:?}", error)
         };
-
+*/
         
         let mut aaa = "άβγ".gkletters();
         assert_eq!(aaa.next().unwrap().letter, 'α');
@@ -851,7 +867,7 @@ mod tests {
         let s = "\u{EB07}βἄ";
         let xxx = s.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:0}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>();
         assert_eq!(xxx, "αβα");
-*/
+
         //assert_eq!(hgk_strip_diacritics("ἄβ"), "ἄβ");
         
 
