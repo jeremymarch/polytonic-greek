@@ -67,6 +67,7 @@ fn get_pua_index(letter:char, diacritics:u32) -> i32 {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum HgkUnicodeMode {
     Precomposed,
     CombiningOnly,
@@ -388,9 +389,9 @@ impl GraphemeCursor {
 
                 } else if self.offset == self.len {
                     //at the end
-                    return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
                     println!("herehere2: {}", self.offset);
                     //return Ok(None);
+                    return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
                 }
                 else {
                     return Ok(None);
@@ -727,9 +728,15 @@ impl HGKIsGreekVowel for char {
 }
 
 pub fn hgk_strip_diacritics(l:&str) -> String {
-    let b = l.gkletters();
-    println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
+    //let b = l.gkletters();
+    //println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
     l.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:0}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>()
+}
+
+pub fn hgk_convert(l:&str, mode:HgkUnicodeMode) -> String {
+    //let b = l.gkletters();
+    //println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
+    l.gkletters().map(|a| a.to_string(mode)).collect::<String>()
 }
 
 pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode) -> String {
@@ -802,28 +809,24 @@ mod tests {
     fn mytest() {
         //println!("{:?}", env::current_dir().unwrap());
 
-        let s = "ᾱ̓́βἄ";//"\u{EB07}βἄ";
+        let s = "α\u{0304}\u{0313}\u{0301}βα\u{0313}\u{0301}";//"\u{EB07}βἄ";
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
-        
-        println!("{:?}", g);
-        println!("{:?}", b);
+        assert_eq!(g, b);
+
+        let s = "α\u{0304}\u{0313}\u{0301}βἄ";//"\u{EB07}βἄ";
+        let g = s.gkletters().collect::<Vec<HGKLetter>>();
+        let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
         assert_eq!(g, b);
 
         let s = "\u{EB07}βἄ";//"ᾱ̓́βἄ";//
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
-        
-        println!("{:?}", g);
-        println!("{:?}", b);
         assert_eq!(g, b);
 
         let s = "\u{1F04}βἄ";//"ᾱ̓́βἄ";//
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
-        
-        println!("{:?}", g);
-        println!("{:?}", b);
         assert_eq!(g, b);
 
         /*
@@ -868,9 +871,12 @@ mod tests {
         let xxx = s.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:0}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>();
         assert_eq!(xxx, "αβα");
 
-        //assert_eq!(hgk_strip_diacritics("ἄβ"), "ἄβ");
+        assert_eq!( hgk_strip_diacritics("ἄβ"), "αβ" );
+        assert_eq!( hgk_strip_diacritics("\u{EB07}"), "α" );
+        assert_eq!( hgk_strip_diacritics("α\u{0304}\u{0313}\u{0301}"), "α" );
         
-
+        assert_eq!( hgk_convert("\u{EB07}", HgkUnicodeMode::CombiningOnly), "α\u{0304}\u{0313}\u{0301}");
+        assert_eq!( hgk_convert("α\u{0304}\u{0313}\u{0301}", HgkUnicodeMode::PrecomposedPUA), "\u{EB07}");
 
         /*
         strip
