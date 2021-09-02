@@ -676,14 +676,12 @@ mod tests {
     use csv;
     use std::error::Error;
     use std::path::Path;
-    //use hex::decode;
-    //use std::str;
 
     fn docsvtest() -> Result<(), Box<dyn Error>> {
         //println!("{:?}", env::current_dir().unwrap());
         let csvfile = "gktest.csv";
         if !Path::new(csvfile).is_file() {
-            Err("CSV file does not exist")? //or: return Err("Bad request".into());
+            Err("CSV tests file does not exist")? //or: return Err("Bad request".into());
         }
 
         let mut rdr = csv::Reader::from_path(csvfile)?; //Reader::from_reader(io::stdin());
@@ -707,9 +705,9 @@ mod tests {
                 _ => panic!("Invalid diacritic on line: {}.", line_number)
             };
 
-            let toggleoff = match record[2].trim() {
-                "yes" => true,
-                "no" => false,
+            let only_on = match record[2].trim() {
+                "onlyon" => true,
+                "toggleoff" => false,
                 _ => panic!("Invalid toggle off on line: {}.", line_number)
             };
 
@@ -720,7 +718,18 @@ mod tests {
                 _ => panic!("Invalid unicode mode on line: {}.", line_number)
             };
 
-            assert_eq!(hgk_toggle_diacritic_str(&hex_to_string(&record[0]), diacritic, toggleoff, mode), hex_to_string(&record[4]), "Error on line: {}.", line_number);
+            let is_equal = match record[5].trim() {
+                "equal" => true,
+                "notequal" => false,
+                _ => panic!("Invalid equal on line: {}.", line_number)
+            };
+
+            if is_equal {
+                assert_eq!(hgk_toggle_diacritic_str(&hex_to_string(&record[0]), diacritic, only_on, mode), hex_to_string(&record[4]), "Error on line: {}.", line_number);
+            }
+            else {
+                assert_ne!(hgk_toggle_diacritic_str(&hex_to_string(&record[0]), diacritic, only_on, mode), hex_to_string(&record[4]), "Error on line: {}.", line_number);
+            }
             line_number += 1;
         }
 
