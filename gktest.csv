@@ -1,4 +1,4 @@
 start, diacritic, toggleoff, unicodemode, result, isequal, comment
-"03B1 0301", 1, 1, 0, "03B1", 1, ""
-"03B1 0304", 2, 1, 0, "03B1", 1, ""
-"03B1 0300", 1, 1, 0, "03B1", 1, ""
+03B1, acute, yes, CombiningOnly, 03B1 0301, 1, ""
+03B1, acute, yes, CombiningOnly, 03B1 0301, 1, ""
+03B1, acute, yes, CombiningOnly, 03B1 0301 , 1, ""

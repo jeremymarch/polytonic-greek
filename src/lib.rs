@@ -81,24 +81,24 @@ pub struct HGKLetter {
 }
 
 pub trait GreekLetters {
-    fn gkletters<'a>(&'a self) -> Graphemes;
+    fn gkletters<'a>(&'a self) -> GreekLetterHolder;
 }
 
 impl GreekLetters for str {
     #[inline]
-    fn gkletters(&self) -> Graphemes {
+    fn gkletters(&self) -> GreekLetterHolder {
         new_gkletters(self)
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct Graphemes {
+pub struct GreekLetterHolder {
     string: String,
-    cursor: GraphemeCursor,
-    cursor_back: GraphemeCursor,
+    cursor: GreekLetterCursor,
+    cursor_back: GreekLetterCursor,
 }
 
-impl Graphemes {
+impl GreekLetterHolder {
     /*
     #[inline]
 
@@ -120,7 +120,7 @@ impl Graphemes {
     */
 }
 
-impl<'a> Iterator for Graphemes {
+impl<'a> Iterator for GreekLetterHolder {
     type Item = HGKLetter;
 
     #[inline]
@@ -143,7 +143,7 @@ impl<'a> Iterator for Graphemes {
     }
 }
 /*
-impl<'a> DoubleEndedIterator for Graphemes<'a> {
+impl<'a> DoubleEndedIterator for GreekLetterHolder<'a> {
     #[inline]
     fn next_back(&mut self) -> Option<&'a str> {
         let end = self.cursor_back.cur_cursor();
@@ -156,47 +156,30 @@ impl<'a> DoubleEndedIterator for Graphemes<'a> {
 }
 */
 
-// maybe unify with PairResult?
-// An enum describing information about a potential boundary.
-#[derive(PartialEq, Eq, Clone, Debug)]
-enum GraphemeState {
-    // No information is known.
-    Unknown,
-    // It is known to not be a boundary.
-    NotBreak,
-    // It is known to be a boundary.
-    Break
-}
-
 #[inline]
-pub fn new_gkletters<'b>(s: &'b str) -> Graphemes {
+pub fn new_gkletters<'b>(s: &'b str) -> GreekLetterHolder {
     let a = s.nfd().collect::<String>();
     let len = a.len();
     //println!("len gkletters: {}", len);
-    Graphemes {
+    GreekLetterHolder {
         string: a,
-        cursor: GraphemeCursor::new(0, len),
-        cursor_back: GraphemeCursor::new(len, len),
+        cursor: GreekLetterCursor::new(0, len),
+        cursor_back: GreekLetterCursor::new(len, len),
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct GraphemeCursor {
+pub struct GreekLetterCursor {
     // Current cursor position.
     offset: usize,
     // Total length of the string.
-    len: usize,
-    // Information about the potential boundary at `offset`
-    state: GraphemeState,
-    resuming: bool,
-    // Cached grapheme category and associated scalar value range.
-    //grapheme_cat_cache: (u32, u32, GraphemeCat),
+    len: usize
 }
 
 /// An error return indicating that not enough content was available in the
 /// provided chunk to satisfy the query, and that more content must be provided.
 #[derive(PartialEq, Eq, Debug)]
-pub enum GraphemeIncomplete {
+pub enum GreekLetterError {
     /// More pre-context is needed. The caller should call `provide_context`
     /// with a chunk ending at the offset given, then retry the query. This
     /// will only be returned if the `chunk_start` parameter is nonzero.
@@ -218,18 +201,11 @@ pub enum GraphemeIncomplete {
 }
 
 
-impl GraphemeCursor {
-    pub fn new(offset: usize, len: usize) -> GraphemeCursor {
-        let state = if offset == 0 || offset == len {
-            GraphemeState::Break
-        } else {
-            GraphemeState::Unknown
-        };
-        GraphemeCursor {
+impl GreekLetterCursor {
+    pub fn new(offset: usize, len: usize) -> GreekLetterCursor {
+        GreekLetterCursor {
             offset: offset,
-            len: len,
-            state: state,
-            resuming: false
+            len: len
         }
     }
 
@@ -238,11 +214,6 @@ impl GraphemeCursor {
     pub fn set_cursor(&mut self, offset: usize) {
         if offset != self.offset {
             self.offset = offset;
-            self.state = if offset == 0 || offset == self.len {
-                GraphemeState::Break
-            } else {
-                GraphemeState::Unknown
-            };
         }
     }
 
@@ -255,7 +226,7 @@ impl GraphemeCursor {
     }
 
     #[inline]
-    pub fn next_boundary(&mut self, chunk: &String, chunk_start: usize) -> Result<Option<HGKLetter>, GraphemeIncomplete> {
+    pub fn next_boundary(&mut self, chunk: &String, chunk_start: usize) -> Result<Option<HGKLetter>, GreekLetterError> {
 
         if self.offset >= self.len {
             //println!("herehere: {}", self.offset);
@@ -319,8 +290,8 @@ impl GraphemeCursor {
 /*
     /// Find the previous boundary after the current cursor position. Only a part
     /// of the string need be supplied. If the chunk is incomplete, then this
-    /// method might return `GraphemeIncomplete::PreContext` or
-    /// `GraphemeIncomplete::PrevChunk`. In the former case, the caller should
+    /// method might return `GreekLetterError::PreContext` or
+    /// `GreekLetterError::PrevChunk`. In the former case, the caller should
     /// call `provide_context` with the requested chunk, then retry. In the
     /// latter case, the caller should provide the chunk preceding the one
     /// given, then retry.
@@ -328,9 +299,9 @@ impl GraphemeCursor {
     /// See `is_boundary` for expectations on the provided chunk.
     ///
     /// ```rust
-    /// # use unicode_segmentation::GraphemeCursor;
+    /// # use unicode_segmentation::GreekLetterCursor;
     /// let flags = "\u{1F1F7}\u{1F1F8}\u{1F1EE}\u{1F1F4}";
-    /// let mut cursor = GraphemeCursor::new(12, flags.len(), false);
+    /// let mut cursor = GreekLetterCursor::new(12, flags.len(), false);
     /// assert_eq!(cursor.prev_boundary(flags, 0), Ok(Some(8)));
     /// assert_eq!(cursor.prev_boundary(flags, 0), Ok(Some(0)));
     /// assert_eq!(cursor.prev_boundary(flags, 0), Ok(None));
@@ -340,29 +311,29 @@ impl GraphemeCursor {
     /// guaranteed, and may be `PrevChunk` or `PreContext` arbitrarily):
     ///
     /// ```rust
-    /// # use unicode_segmentation::{GraphemeCursor, GraphemeIncomplete};
+    /// # use unicode_segmentation::{GreekLetterCursor, GreekLetterError};
     /// let s = "abcd";
-    /// let mut cursor = GraphemeCursor::new(4, s.len(), false);
+    /// let mut cursor = GreekLetterCursor::new(4, s.len(), false);
     /// assert_eq!(cursor.prev_boundary(&s[2..4], 2), Ok(Some(3)));
-    /// assert_eq!(cursor.prev_boundary(&s[2..4], 2), Err(GraphemeIncomplete::PrevChunk));
+    /// assert_eq!(cursor.prev_boundary(&s[2..4], 2), Err(GreekLetterError::PrevChunk));
     /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(2)));
     /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(1)));
     /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(0)));
     /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(None));
     /// ```
-    pub fn prev_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<usize>, GraphemeIncomplete> {
+    pub fn prev_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<usize>, GreekLetterError> {
         if self.offset == 0 {
             return Ok(None);
         }
         if self.offset == chunk_start {
-            return Err(GraphemeIncomplete::PrevChunk);
+            return Err(GreekLetterError::PrevChunk);
         }
         let mut iter = chunk[..self.offset - chunk_start].chars().rev();
         let mut ch = iter.next().unwrap();
         loop {
             if self.offset == chunk_start {
                 self.resuming = true;
-                return Err(GraphemeIncomplete::PrevChunk);
+                return Err(GreekLetterError::PrevChunk);
             }
             if self.resuming {
                 self.cat_before = Some(self.grapheme_category(ch));
@@ -381,7 +352,7 @@ impl GraphemeCursor {
                 } else {
                     self.resuming = true;
                     self.cat_after = Some(self.grapheme_category(ch));
-                    return Err(GraphemeIncomplete::PrevChunk);
+                    return Err(GreekLetterError::PrevChunk);
                 }
             }
             self.resuming = true;
@@ -662,6 +633,25 @@ pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode
     letter.to_string(mode)
 }
 /*
+pub fn hgk_compare(a:&str, b:&str, compare_type:i32) -> i32 {
+    let a1 = a.grkletters();
+    let b1 = b.grkletters();
+    loop {
+        let aa = a1.next();
+        let bb = b1.next();
+
+        if aa && bb && aa.letter == bb.letter {
+            continue;
+        }
+        else {
+
+        }
+
+    }
+
+}
+*/
+/*
 fn accent_recessive(s:&str) -> String {
 
 }
@@ -697,31 +687,66 @@ mod tests {
         }
 
         let mut rdr = csv::Reader::from_path(csvfile)?; //Reader::from_reader(io::stdin());
+        let mut line_number = 1;
         for result in rdr.records() {
             // The iterator yields Result<StringRecord, Error>, so we check the error here.
             let record = result?;
-            //println!("{:?}", &record[3]);
-            
-            let v: Vec<_> = record[0].split([' '].as_ref()).collect();
-            println!("{:?}", v);
-            //let v2:Vec<u8> = v.iter().map(hex::decode).collect();
-            //println!("{:?}", v2);
 
-/*
-            let s = record[0].replace(" ", "");
-            let s2 = hex::decode("03B1").unwrap();
-            println!("{:?} - {:?}", &s2, String::from_utf16(&s2) );
-            */
+            let diacritic = match record[1].trim() {
+                "none" => HGK_NO_DIACRITICS,
+                "rough" => HGK_ROUGH,
+                "smooth" => HGK_SMOOTH,
+                "acute" => HGK_ACUTE,
+                "grave" => HGK_GRAVE,
+                "circumflex" => HGK_CIRCUMFLEX,
+                "macron" => HGK_MACRON,
+                "breve" => HGK_BREVE,
+                "iotasub" => HGK_IOTA_SUBSCRIPT,
+                "diaeresis" => HGK_DIAERESIS,
+                "underdot" => HGK_UNDERDOT,
+                _ => panic!("Invalid diacritic on line: {}.", line_number)
+            };
+
+            let toggleoff = match record[2].trim() {
+                "yes" => true,
+                "no" => false,
+                _ => panic!("Invalid toggle off on line: {}.", line_number)
+            };
+
+            let mode = match record[3].trim() {
+                "CombiningOnly" => HgkUnicodeMode::CombiningOnly,
+                "PrecomposedPUA" => HgkUnicodeMode::PrecomposedPUA,
+                "Precomposed" => HgkUnicodeMode::Precomposed,
+                _ => panic!("Invalid unicode mode on line: {}.", line_number)
+            };
+
+            assert_eq!(hgk_toggle_diacritic_str(&hex_to_string(&record[0]), diacritic, toggleoff, mode), hex_to_string(&record[4]), "Error on line: {}.", line_number);
+            line_number += 1;
         }
 
-
-
         Ok(())
+    }
+
+    fn hex_to_string(s:&str) -> String {
+        
+        let b = hex::decode(s.replace(" ", "")).unwrap();
+
+        let res: Vec<u16> = b
+        .chunks_exact(2)
+        .into_iter()
+        .map(|a| u16::from_be_bytes([a[0], a[1]]))
+        .collect();
+
+        String::from_utf16( res.as_slice() ).unwrap()
     }
 
     #[test]
     fn mytest() {
         //println!("{:?}", env::current_dir().unwrap());
+
+        assert_eq!(hex_to_string("03B1 0304 03B2"), "α\u{0304}β");
+
+
 
         let s = "α\u{0304}\u{0313}\u{0301}βα\u{0313}\u{0301}";//"\u{EB07}βἄ";
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
@@ -743,12 +768,12 @@ mod tests {
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
         assert_eq!(g, b);
 
-        /*
+        
         match docsvtest() {
             Ok(()) => (),
             Err(error) => panic!("Error: {:?}", error)
         };
-*/
+
         
         let mut aaa = "άβγ".gkletters();
         assert_eq!(aaa.next().unwrap().letter, 'α');
