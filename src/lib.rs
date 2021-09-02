@@ -685,13 +685,13 @@ mod tests {
         }
 
         let mut rdr = csv::Reader::from_path(csvfile)?; //Reader::from_reader(io::stdin());
-        let mut line_number = 1;
+        let mut line_number = 2; //start on line 2 because header row
         for result in rdr.records() {
             // The iterator yields Result<StringRecord, Error>, so we check the error here.
             let record = result?;
 
             let diacritic = match record[1].trim() {
-                "none" => HGK_NO_DIACRITICS,
+                //"none" => HGK_NO_DIACRITICS,
                 "rough" => HGK_ROUGH,
                 "smooth" => HGK_SMOOTH,
                 "acute" => HGK_ACUTE,
@@ -736,6 +736,7 @@ mod tests {
         Ok(())
     }
 
+    //make string from utf16 hex codepoints
     fn hex_to_string(s:&str) -> String {
         
         let b = hex::decode(s.replace(" ", "")).unwrap();
@@ -827,9 +828,6 @@ mod tests {
         assert_eq!( hgk_convert("α\u{0304}\u{0313}\u{0301}", HgkUnicodeMode::PrecomposedPUA), "\u{EB07}");
 
         /*
-        strip
-        convert
-        compare
 
 
         let s = "ἄβί".to_string();
