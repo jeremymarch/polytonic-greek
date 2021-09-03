@@ -632,15 +632,15 @@ pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode
     letter.toggle_diacritic(d, on_only);
     letter.to_string(mode)
 }
-/*
+
 pub fn hgk_compare(a:&str, b:&str, compare_type:i32) -> i32 {
-    let a1 = a.grkletters();
-    let b1 = b.grkletters();
+    let mut a1 = a.gkletters();
+    let mut b1 = b.gkletters();
     loop {
         let aa = a1.next();
         let bb = b1.next();
 
-        if aa && bb && aa.letter == bb.letter {
+        if aa.is_some() && bb.is_some() && aa.unwrap().letter == bb.unwrap().letter {
             continue;
         }
         else {
@@ -650,7 +650,7 @@ pub fn hgk_compare(a:&str, b:&str, compare_type:i32) -> i32 {
     }
 
 }
-*/
+
 /*
 fn accent_recessive(s:&str) -> String {
 

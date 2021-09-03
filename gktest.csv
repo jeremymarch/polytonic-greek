@@ -1,8 +1,9 @@
-start, diacritic, toggleoff_mode, unicodemode, result, isequal, comment
-03B1 0304, acute, onlyon, CombiningOnly, 03B1 0304 0301, equal, ""
-03B1 0304, acute, onlyon, PrecomposedPUA, EB00, equal, ""
-03B1 0304, acute, onlyon, Precomposed, 03B1 0304 0301, notequal, "not sure if this is right"
-03B1 0304, acute, onlyon, Precomposed, 1FB1 0301, equal, ""
-03B1, acute, onlyon, Precomposed, 03AC, equal, "tonos"
-03B1 0301, acute, toggleoff, PrecomposedPUA, 03B1, equal, "tonos"
-03B1 0301, acute, onlyon, PrecomposedPUA, 03B1, notequal, "tonos"
+start,diacritic,toggleoff_mode,unicodemode,result,isequal,comment
+03B1 0304,acute,onlyon,CombiningOnly,03B1 0304 0301,equal,
+03B1 0304,acute,onlyon,PrecomposedPUA,EB00,equal,
+03B1 0304,acute,onlyon,Precomposed,03B1 0304 0301,notequal,not sure if this is right
+03B1 0304,acute,onlyon,Precomposed,1FB1 0301,equal,
+03B1,acute,onlyon,Precomposed,03AC,equal,tonos
+03B1 0301,acute,toggleoff,PrecomposedPUA,03B1,equal,tonos
+03B1 0301,acute,onlyon,PrecomposedPUA,03B1,notequal,tonos
+03B1 0301,grave,onlyon,CombiningOnly,03B1 0300,equal,
