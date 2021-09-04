@@ -785,16 +785,40 @@ mod tests {
     }
 
     #[test]
+    fn test_compare() {
+        assert_eq!( hgk_compare("α", "α", 0), 0);
+        assert_eq!( hgk_compare("α", "Α", 0), 0);
+        assert_eq!( hgk_compare("Α", "Α", 0), 0);
+        assert_eq!( hgk_compare("α", "β", 0), -1);
+        assert_eq!( hgk_compare("β", "α", 0), 1);
+        assert_eq!( hgk_compare("β", "ἄ", 0), 1);
+
+        assert_eq!( hgk_compare("ω", "ω", 0), 0);
+        assert_eq!( hgk_compare("α", "ω", 0), -1);
+        assert_eq!( hgk_compare("ω", "α", 0), 1);
+
+
+        assert_eq!( hgk_compare("αβ", "α", 0), 1);
+        assert_eq!( hgk_compare("α", "αβ", 0), -1);
+
+        assert_eq!( hgk_compare("αβ", "β", 0), -1);
+        assert_eq!( hgk_compare("β", "αβ", 0), 1);
+    }
+
+    #[test]
+    fn csv_tests() {
+        match docsvtest() {
+            Ok(()) => (),
+            Err(error) => panic!("Error: {:?}", error)
+        };
+    }
+
+    #[test]
     fn mytest() {
         //println!("{:?}", env::current_dir().unwrap());
 
         assert_eq!(hex_to_string("03B1 0304 03B2"), "α\u{0304}β");
 
-        assert_eq!( hgk_compare("α", "β", 0), -1);
-        assert_eq!( hgk_compare("β", "α", 0), 1);
-
-        assert_eq!( hgk_compare("α", "α", 0), 0);
-        assert_eq!( hgk_compare("β", "ἄ", 0), 1);
 
         let s = "α\u{0304}\u{0313}\u{0301}βα\u{0313}\u{0301}";//"\u{EB07}βἄ";
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
@@ -815,12 +839,6 @@ mod tests {
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
         assert_eq!(g, b);
-
-        
-        match docsvtest() {
-            Ok(()) => (),
-            Err(error) => panic!("Error: {:?}", error)
-        };
 
         
         let mut aaa = "άβγ".gkletters();
