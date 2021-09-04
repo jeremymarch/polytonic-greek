@@ -238,9 +238,9 @@ impl GreekLetterCursor {
         //println!("next boundary: offset: {} {}", self.offset, ch);
         
         loop {
-                if the_letter == '\u{0000}' && !unicode_normalization::char::is_combining_mark(ch) {
+                if the_letter == '\u{0000}' && !hgk_is_combining(ch) {
                     if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
-                        //PUA conversion
+                        //extended greek conversion
                         the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
                         diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
                     }
@@ -253,7 +253,7 @@ impl GreekLetterCursor {
                        the_letter = ch;
                     }
                 }
-                else if unicode_normalization::char::is_combining_mark(ch) {
+                else if hgk_is_combining(ch) {
                     match ch {
                         '\u{0300}' => diacritics |= HGK_GRAVE,
                         '\u{0301}' => diacritics |= HGK_ACUTE,
@@ -370,10 +370,6 @@ impl GreekLetterCursor {
 */
 }
 /************************************************/
-
-
-
-
 
 
 impl HGKLetter {
@@ -715,6 +711,23 @@ pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
     else //2 at end
     {
         return 1;
+    }
+}
+
+#[inline]
+pub fn hgk_is_combining(c:char) -> bool {
+    match c {
+        '\u{0300}' => true,
+        '\u{0301}' => true,
+        '\u{0304}' => true,
+        '\u{0306}' => true,
+        '\u{0308}' => true,
+        '\u{0313}' => true,
+        '\u{0314}' => true,
+        '\u{0323}' => true,
+        '\u{0342}' => true,
+        '\u{0345}' => true,
+        _ => { false }
     }
 }
 
