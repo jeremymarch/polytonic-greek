@@ -648,9 +648,30 @@ pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
         }
         //check range of letters
 
+        let lettera = a_letter.as_ref().unwrap().letter as usize;
+        let letterb = b_letter.as_ref().unwrap().letter as usize;
 
-        let a_sort:u32 = GREEK_BASIC[a_letter.as_ref().unwrap().letter as usize - 0x0370].2;
-        let b_sort:u32 = GREEK_BASIC[b_letter.as_ref().unwrap().letter as usize - 0x0370].2;
+        //if one or both characters are out of the greek range
+        if (lettera < 0x0370 || lettera > 0x03FF) && (letterb < 0x0370 || letterb > 0x03FF) {
+            if lettera < letterb {
+                return -1;
+            }
+            else if lettera > letterb {
+                return 1;
+            }
+            else {
+                return 0;
+            }
+        }
+        else if lettera < 0x0370 || lettera > 0x03FF { //non-greek sorts before greek 
+            return -1;
+        }
+        else if letterb < 0x0370 || letterb > 0x03FF { //non-greek sorts before greek 
+            return 1;
+        }
+
+        let a_sort:u32 = GREEK_BASIC[lettera - 0x0370].2;
+        let b_sort:u32 = GREEK_BASIC[letterb - 0x0370].2;
 
         //if one letter sorts less than the other
         if a_sort < b_sort {
