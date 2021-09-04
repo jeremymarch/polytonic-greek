@@ -284,185 +284,184 @@ pub(crate) const GREEK_LOWER_PUA: &[char] = &[
 pub const NOT_ACCENTABLE_CHAR :char = '\u{0001}'; //dummy value
 pub const NOCHAR              :u32 = 0;
 
-pub enum GreekSort {
-    HgkNoSort = 0,
-    HgkAlphaSort = 1,
-    HgkBetaSort = 2,
-    HgkGammaSort = 3,
-    HgkDeltaSort = 4,
-    HgkEpsilonSort = 5,
-    HgkDigammaSort = 6,
-    HgkZetaSort = 7,
-    HgkEtaSort = 8,
-    HgkThetaSort = 9,
-    HgkIotaSort = 10,
-    HgkKappaSort = 11,
-    HgkLambdaSort = 12,
-    HgkMuSort = 13,
-    HgkNuSort = 14,
-    HgkXiSort = 15,
-    HgkOmicronSort = 16,
-    HgkPiSort = 17,
-    HgkSanSort = 18,
-    HgkKoppaSort = 19,
-    HgkRhoSort = 20,
-    HgkSigmaSort = 21,
-    HgkTauSort = 22,
-    HgkUpsilonSort = 23,
-    HgkPhiSort = 24,
-    HgkChiSort = 25,
-    HgkPsiSort = 26,
-    HgkOmegaSort = 27
-}
+const HgkNoSort:u32 = 0;
+const HgkAlphaSort:u32 = 1;
+const HgkBetaSort:u32 = 2;
+const HgkGammaSort:u32 = 3;
+const HgkDeltaSort:u32 = 4;
+const HgkEpsilonSort:u32 = 5;
+const HgkDigammaSort:u32 = 6;
+const HgkZetaSort:u32 = 7;
+const HgkEtaSort:u32 = 8;
+const HgkThetaSort:u32 = 9;
+const HgkIotaSort:u32 = 10;
+const HgkKappaSort:u32 = 11;
+const HgkLambdaSort:u32 = 12;
+const HgkMuSort:u32 = 13;
+const HgkNuSort:u32 = 14;
+const HgkXiSort:u32 = 15;
+const HgkOmicronSort:u32 = 16;
+const HgkPiSort:u32 = 17;
+const HgkSanSort:u32 = 18;
+const HgkKoppaSort:u32 = 19;
+const HgkRhoSort:u32 = 20;
+const HgkSigmaSort:u32 = 21;
+const HgkTauSort:u32 = 22;
+const HgkUpsilonSort:u32 = 23;
+const HgkPhiSort:u32 = 24;
+const HgkChiSort:u32 = 25;
+const HgkPsiSort:u32 = 26;
+const HgkOmegaSort:u32 = 27;
+
 
 //first col will be the actual codepoint for an accenting character
 //or NOT_ACCENTABLE_CHAR or NOCHAR
 //pub(crate) const COMPOSITION_TABLE_KV: &[(u32, char, )] = &[
-pub(crate) const GREEK_BASIC: &[(char, u32, GreekSort)] = &[
-    /* 0370 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0371 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0372 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0373 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0374 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0375 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0376 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0377 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0378 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0379 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 037A */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 037B */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 037C */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 037D */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 037E */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 037F */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0380 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0381 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0382 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0383 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0384 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0385 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0386 */ ( '\u{0391}', HGK_ACUTE, GreekSort::HgkAlphaSort ),
-    /* 0387 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 0388 */ ( '\u{0395}', HGK_ACUTE, GreekSort::HgkEpsilonSort ),
-    /* 0389 */ ( '\u{0397}', HGK_ACUTE, GreekSort::HgkEtaSort ),
-    /* 038A */ ( '\u{0399}', HGK_ACUTE, GreekSort::HgkIotaSort ),
-    /* 038B */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 038C */ ( '\u{039F}', HGK_ACUTE, GreekSort::HgkOmicronSort ),
-    /* 038D */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 038E */ ( '\u{03A5}', HGK_ACUTE, GreekSort::HgkUpsilonSort ),
-    /* 038F */ ( '\u{03A9}', HGK_ACUTE, GreekSort::HgkOmegaSort ),
-    /* 0390 */ ( '\u{03B9}', HGK_ACUTE | HGK_DIAERESIS, GreekSort::HgkIotaSort ),
-    /* 0391 */ ( '\u{0391}', 0, GreekSort::HgkAlphaSort ),
-    /* 0392 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkBetaSort ), /* capital beta */
-    /* 0393 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkGammaSort ), /* capital gamma */
-    /* 0394 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkDeltaSort ), /* capital delta */
-    /* 0395 */ ( '\u{0395}', 0 , GreekSort::HgkEpsilonSort),
-    /* 0396 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkZetaSort ), /* capital zeta */
-    /* 0397 */ ( '\u{0397}', 0, GreekSort::HgkEtaSort ),
-    /* 0398 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkThetaSort ), /* capital theta */
-    /* 0399 */ ( '\u{0399}', 0, GreekSort::HgkIotaSort ),
-    /* 039A */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkKappaSort ), /* capital kappa */
-    /* 039B */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkLambdaSort ), /* capital lambda */
-    /* 039C */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkMuSort ), /* capital mu */
-    /* 039D */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkNuSort ), /* capital nu */
-    /* 039E */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkXiSort ), /* capital xi */
-    /* 039F */ ( '\u{039F}', 0, GreekSort::HgkOmicronSort ),
-    /* 03A0 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkPiSort ), /* capital pi */
-    /* 03A1 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkRhoSort ), /* capital rho */
-    /* 03A2 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03A3 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkSigmaSort ), /* capital sigma */
-    /* 03A4 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkTauSort ), /* capital tau */
-    /* 03A5 */ ( '\u{03A5}', 0, GreekSort::HgkUpsilonSort ),
-    /* 03A6 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkPhiSort ), /* capital phi */
-    /* 03A7 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkChiSort ), /* capital chi */
-    /* 03A8 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkPsiSort ), /* capital psi */
-    /* 03A9 */ ( '\u{03A9}', 0, GreekSort::HgkOmegaSort ),
-    /* 03AA */ ( '\u{0399}', HGK_DIAERESIS, GreekSort::HgkIotaSort ),
-    /* 03AB */ ( '\u{03A5}', HGK_DIAERESIS, GreekSort::HgkUpsilonSort ),
-    /* 03AC */ ( '\u{03B1}', HGK_ACUTE, GreekSort::HgkAlphaSort ),
-    /* 03AD */ ( '\u{03B5}', HGK_ACUTE, GreekSort::HgkEpsilonSort ),
-    /* 03AE */ ( '\u{03B7}', HGK_ACUTE, GreekSort::HgkEtaSort ),
-    /* 03AF */ ( '\u{03B9}', HGK_ACUTE, GreekSort::HgkIotaSort ),
-    /* 03B0 */ ( '\u{03C5}', HGK_ACUTE | HGK_DIAERESIS, GreekSort::HgkUpsilonSort ),
-    /* 03B1 */ ( '\u{03B1}', 0, GreekSort::HgkAlphaSort ),
-    /* 03B2 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkBetaSort ), /* small beta */
-    /* 03B3 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkGammaSort ), /* small gamma */
-    /* 03B4 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkDeltaSort ), /* small delta */
-    /* 03B5 */ ( '\u{03B5}', 0, GreekSort::HgkEpsilonSort ),
-    /* 03B6 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkZetaSort ), /* small zeta */
-    /* 03B7 */ ( '\u{03B7}', 0, GreekSort::HgkEtaSort ),
-    /* 03B8 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkThetaSort ), /* small theta */
-    /* 03B9 */ ( '\u{03B9}', 0, GreekSort::HgkIotaSort ),
-    /* 03BA */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkKappaSort ), /* small kappa */
-    /* 03BB */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkLambdaSort ), /* small lambda */
-    /* 03BC */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkMuSort ), /* small mu */
-    /* 03BD */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkNuSort ), /* small nu */
-    /* 03BE */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkXiSort ), /* small xi */
-    /* 03BF */ ( '\u{03BF}', 0, GreekSort::HgkOmicronSort ),
-    /* 03C0 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkPiSort ), /* small pi */
-    /* 03C1 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkRhoSort ), /* small rho */
-    /* 03C2 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkSigmaSort ), /* small final sigma */
-    /* 03C3 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkSigmaSort ), /* small sigma */
-    /* 03C4 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkTauSort ), /* small tau */
-    /* 03C5 */ ( '\u{03C5}', 0, GreekSort::HgkUpsilonSort ),
-    /* 03C6 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkPhiSort ), /* small phi */
-    /* 03C7 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkChiSort ), /* small chi */
-    /* 03C8 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, GreekSort::HgkPsiSort ), /* small psi */
-    /* 03C9 */ ( '\u{03C9}', 0, GreekSort::HgkOmegaSort ),
-    /* 03CA */ ( '\u{03B9}', HGK_DIAERESIS, GreekSort::HgkIotaSort ),
-    /* 03CB */ ( '\u{03C5}', HGK_DIAERESIS, GreekSort::HgkUpsilonSort ),
-    /* 03CC */ ( '\u{03BF}', HGK_ACUTE, GreekSort::HgkOmicronSort ),
-    /* 03CD */ ( '\u{03C5}', HGK_ACUTE, GreekSort::HgkUpsilonSort ),
-    /* 03CE */ ( '\u{03C9}', HGK_ACUTE, GreekSort::HgkOmegaSort ),
-    /* 03CF */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D0 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D1 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D2 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D3 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D4 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D5 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D6 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D7 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D8 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03D9 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03DA */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03DB */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03DC */ ( '\u{03DC}', 0, GreekSort::HgkDigammaSort ), /* DIGAMMA */
-    /* 03DD */ ( '\u{03DD}', 0, GreekSort::HgkDigammaSort ), /* SMALL DIGAMMA */
-    /* 03DE */ ( '\u{03DE}', 0, GreekSort::HgkKoppaSort ), /* KOPPA */
-    /* 03DF */ ( '\u{03DF}', 0, GreekSort::HgkKoppaSort ), /* SMALL KOPPA */
-    /* 03E0 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03E1 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03E2 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03E3 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03E4 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03E5 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03E6 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03E7 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03E8 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03E9 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03EA */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03EB */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03EC */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03ED */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03EE */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03EF */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F0 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F1 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F2 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F3 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F4 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F5 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F6 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F7 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F8 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03F9 */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03FA */ ( '\u{03FA}', 0, GreekSort::HgkSanSort ), /* CAPITAL SAN */
-    /* 03FB */ ( '\u{03FB}', 0, GreekSort::HgkSanSort ), /* SMALL SAN */
-    /* 03FC */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03FD */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03FE */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort ),
-    /* 03FF */ ( '\u{0000}', HGK_NO_DIACRITICS, GreekSort::HgkNoSort )
+pub(crate) const GREEK_BASIC: &[(char, u32, u32)] = &[
+    /* 0370 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0371 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0372 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0373 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0374 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0375 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0376 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0377 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0378 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0379 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 037A */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 037B */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 037C */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 037D */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 037E */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 037F */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0380 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0381 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0382 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0383 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0384 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0385 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0386 */ ( '\u{0391}', HGK_ACUTE, HgkAlphaSort ),
+    /* 0387 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 0388 */ ( '\u{0395}', HGK_ACUTE, HgkEpsilonSort ),
+    /* 0389 */ ( '\u{0397}', HGK_ACUTE, HgkEtaSort ),
+    /* 038A */ ( '\u{0399}', HGK_ACUTE, HgkIotaSort ),
+    /* 038B */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 038C */ ( '\u{039F}', HGK_ACUTE, HgkOmicronSort ),
+    /* 038D */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 038E */ ( '\u{03A5}', HGK_ACUTE, HgkUpsilonSort ),
+    /* 038F */ ( '\u{03A9}', HGK_ACUTE, HgkOmegaSort ),
+    /* 0390 */ ( '\u{03B9}', HGK_ACUTE | HGK_DIAERESIS, HgkIotaSort ),
+    /* 0391 */ ( '\u{0391}', 0, HgkAlphaSort ),
+    /* 0392 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkBetaSort ), /* capital beta */
+    /* 0393 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkGammaSort ), /* capital gamma */
+    /* 0394 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkDeltaSort ), /* capital delta */
+    /* 0395 */ ( '\u{0395}', 0 , HgkEpsilonSort),
+    /* 0396 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkZetaSort ), /* capital zeta */
+    /* 0397 */ ( '\u{0397}', 0, HgkEtaSort ),
+    /* 0398 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkThetaSort ), /* capital theta */
+    /* 0399 */ ( '\u{0399}', 0, HgkIotaSort ),
+    /* 039A */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkKappaSort ), /* capital kappa */
+    /* 039B */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkLambdaSort ), /* capital lambda */
+    /* 039C */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkMuSort ), /* capital mu */
+    /* 039D */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkNuSort ), /* capital nu */
+    /* 039E */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkXiSort ), /* capital xi */
+    /* 039F */ ( '\u{039F}', 0, HgkOmicronSort ),
+    /* 03A0 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkPiSort ), /* capital pi */
+    /* 03A1 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkRhoSort ), /* capital rho */
+    /* 03A2 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03A3 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkSigmaSort ), /* capital sigma */
+    /* 03A4 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkTauSort ), /* capital tau */
+    /* 03A5 */ ( '\u{03A5}', 0, HgkUpsilonSort ),
+    /* 03A6 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkPhiSort ), /* capital phi */
+    /* 03A7 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkChiSort ), /* capital chi */
+    /* 03A8 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkPsiSort ), /* capital psi */
+    /* 03A9 */ ( '\u{03A9}', 0, HgkOmegaSort ),
+    /* 03AA */ ( '\u{0399}', HGK_DIAERESIS, HgkIotaSort ),
+    /* 03AB */ ( '\u{03A5}', HGK_DIAERESIS, HgkUpsilonSort ),
+    /* 03AC */ ( '\u{03B1}', HGK_ACUTE, HgkAlphaSort ),
+    /* 03AD */ ( '\u{03B5}', HGK_ACUTE, HgkEpsilonSort ),
+    /* 03AE */ ( '\u{03B7}', HGK_ACUTE, HgkEtaSort ),
+    /* 03AF */ ( '\u{03B9}', HGK_ACUTE, HgkIotaSort ),
+    /* 03B0 */ ( '\u{03C5}', HGK_ACUTE | HGK_DIAERESIS, HgkUpsilonSort ),
+    /* 03B1 */ ( '\u{03B1}', 0, HgkAlphaSort ),
+    /* 03B2 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkBetaSort ), /* small beta */
+    /* 03B3 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkGammaSort ), /* small gamma */
+    /* 03B4 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkDeltaSort ), /* small delta */
+    /* 03B5 */ ( '\u{03B5}', 0, HgkEpsilonSort ),
+    /* 03B6 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkZetaSort ), /* small zeta */
+    /* 03B7 */ ( '\u{03B7}', 0, HgkEtaSort ),
+    /* 03B8 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkThetaSort ), /* small theta */
+    /* 03B9 */ ( '\u{03B9}', 0, HgkIotaSort ),
+    /* 03BA */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkKappaSort ), /* small kappa */
+    /* 03BB */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkLambdaSort ), /* small lambda */
+    /* 03BC */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkMuSort ), /* small mu */
+    /* 03BD */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkNuSort ), /* small nu */
+    /* 03BE */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkXiSort ), /* small xi */
+    /* 03BF */ ( '\u{03BF}', 0, HgkOmicronSort ),
+    /* 03C0 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkPiSort ), /* small pi */
+    /* 03C1 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkRhoSort ), /* small rho */
+    /* 03C2 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkSigmaSort ), /* small final sigma */
+    /* 03C3 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkSigmaSort ), /* small sigma */
+    /* 03C4 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkTauSort ), /* small tau */
+    /* 03C5 */ ( '\u{03C5}', 0, HgkUpsilonSort ),
+    /* 03C6 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkPhiSort ), /* small phi */
+    /* 03C7 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkChiSort ), /* small chi */
+    /* 03C8 */ ( NOT_ACCENTABLE_CHAR, NOCHAR, HgkPsiSort ), /* small psi */
+    /* 03C9 */ ( '\u{03C9}', 0, HgkOmegaSort ),
+    /* 03CA */ ( '\u{03B9}', HGK_DIAERESIS, HgkIotaSort ),
+    /* 03CB */ ( '\u{03C5}', HGK_DIAERESIS, HgkUpsilonSort ),
+    /* 03CC */ ( '\u{03BF}', HGK_ACUTE, HgkOmicronSort ),
+    /* 03CD */ ( '\u{03C5}', HGK_ACUTE, HgkUpsilonSort ),
+    /* 03CE */ ( '\u{03C9}', HGK_ACUTE, HgkOmegaSort ),
+    /* 03CF */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D0 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D1 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D2 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D3 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D4 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D5 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D6 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D7 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D8 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03D9 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03DA */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03DB */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03DC */ ( '\u{03DC}', 0, HgkDigammaSort ), /* DIGAMMA */
+    /* 03DD */ ( '\u{03DD}', 0, HgkDigammaSort ), /* SMALL DIGAMMA */
+    /* 03DE */ ( '\u{03DE}', 0, HgkKoppaSort ), /* KOPPA */
+    /* 03DF */ ( '\u{03DF}', 0, HgkKoppaSort ), /* SMALL KOPPA */
+    /* 03E0 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03E1 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03E2 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03E3 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03E4 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03E5 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03E6 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03E7 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03E8 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03E9 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03EA */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03EB */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03EC */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03ED */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03EE */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03EF */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F0 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F1 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F2 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F3 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F4 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F5 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F6 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F7 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F8 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03F9 */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03FA */ ( '\u{03FA}', 0, HgkSanSort ), /* CAPITAL SAN */
+    /* 03FB */ ( '\u{03FB}', 0, HgkSanSort ), /* SMALL SAN */
+    /* 03FC */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03FD */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03FE */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort ),
+    /* 03FF */ ( '\u{0000}', HGK_NO_DIACRITICS, HgkNoSort )
 ];
 
 //pub(crate) const COMPOSITION_TABLE_KV: &[(u32, char)] = &[

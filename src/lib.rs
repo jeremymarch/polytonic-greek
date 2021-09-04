@@ -633,22 +633,56 @@ pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode
     letter.to_string(mode)
 }
 
-pub fn hgk_compare(a:&str, b:&str, compare_type:i32) -> i32 {
+pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
     let mut a1 = a.gkletters();
     let mut b1 = b.gkletters();
-    loop {
-        let aa = a1.next();
-        let bb = b1.next();
 
-        if aa.is_some() && bb.is_some() && aa.unwrap().letter == bb.unwrap().letter {
-            continue;
+    let mut a_letter:Option<HGKLetter>;
+    let mut b_letter:Option<HGKLetter>;
+
+    loop  {
+        a_letter = a1.next();
+        b_letter = b1.next();
+        if a_letter.is_none() || b_letter.is_none() {
+            break;
         }
-        else {
+        //check range of letters
 
+
+        let a_sort:u32 = GREEK_BASIC[a_letter.as_ref().unwrap().letter as usize - 0x0370].2;
+        let b_sort:u32 = GREEK_BASIC[b_letter.as_ref().unwrap().letter as usize - 0x0370].2;
+
+        //if one letter sorts less than the other
+        if a_sort < b_sort {
+            return -1;
+        }
+        else if a_sort > b_sort {
+            return 1;
         }
 
+        if (a_letter.as_ref().unwrap().diacritics & !compare_type) != (b_letter.as_ref().unwrap().diacritics & !compare_type) {
+            if (a_letter.unwrap().diacritics & !compare_type) < (b_letter.unwrap().diacritics & !compare_type) {
+                return -1;
+            }
+            else {
+                return 1;
+            }
+        }
     }
+    //here we have reached the end of one or both strings and they are still completely equal
 
+    if a_letter.is_none() && b_letter.is_none() //both at end
+    {
+        return 0;
+    }
+    else if a_letter.is_none() //1 at end
+    {
+        return -1;
+    }
+    else //2 at end
+    {
+        return 1;
+    }
 }
 
 /*
@@ -738,7 +772,7 @@ mod tests {
 
     //make string from utf16 hex codepoints
     fn hex_to_string(s:&str) -> String {
-        
+        //https://stackoverflow.com/questions/3408706/hexadecimal-string-to-byte-array-in-c
         let b = hex::decode(s.replace(" ", "")).unwrap();
 
         let res: Vec<u16> = b
@@ -756,7 +790,11 @@ mod tests {
 
         assert_eq!(hex_to_string("03B1 0304 03B2"), "α\u{0304}β");
 
+        assert_eq!( hgk_compare("α", "β", 0), -1);
+        assert_eq!( hgk_compare("β", "α", 0), 1);
 
+        assert_eq!( hgk_compare("α", "α", 0), 0);
+        assert_eq!( hgk_compare("β", "ἄ", 0), 1);
 
         let s = "α\u{0304}\u{0313}\u{0301}βα\u{0313}\u{0301}";//"\u{EB07}βἄ";
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
