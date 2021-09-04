@@ -86,19 +86,19 @@ pub trait GreekLetters {
 
 impl GreekLetters for str {
     #[inline]
-    fn gkletters(&self) -> GreekLetterHolder {
+    fn gkletters<'a>(&'a self) -> GreekLetterHolder<'a> {
         new_gkletters(self)
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct GreekLetterHolder {
-    string: String,
+pub struct GreekLetterHolder<'a> {
+    string: &'a str,
     cursor: GreekLetterCursor,
     cursor_back: GreekLetterCursor,
 }
 
-impl GreekLetterHolder {
+impl<'a> GreekLetterHolder<'a> {
     /*
     #[inline]
 
@@ -120,7 +120,7 @@ impl GreekLetterHolder {
     */
 }
 
-impl<'a> Iterator for GreekLetterHolder {
+impl<'a> Iterator for GreekLetterHolder<'a> {
     type Item = HGKLetter;
 
     #[inline]
@@ -157,12 +157,10 @@ impl<'a> DoubleEndedIterator for GreekLetterHolder<'a> {
 */
 
 #[inline]
-pub fn new_gkletters<'b>(s: &'b str) -> GreekLetterHolder {
-    let a = s.nfd().collect::<String>();
-    let len = a.len();
-    //println!("len gkletters: {}", len);
+pub fn new_gkletters<'b>(s: &'b str) -> GreekLetterHolder<'b> {
+    let len = s.len();
     GreekLetterHolder {
-        string: a,
+        string: s,
         cursor: GreekLetterCursor::new(0, len),
         cursor_back: GreekLetterCursor::new(len, len),
     }
@@ -226,7 +224,7 @@ impl GreekLetterCursor {
     }
 
     #[inline]
-    pub fn next_boundary(&mut self, chunk: &String, chunk_start: usize) -> Result<Option<HGKLetter>, GreekLetterError> {
+    pub fn next_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<HGKLetter>, GreekLetterError> {
 
         if self.offset >= self.len {
             //println!("herehere: {}", self.offset);
@@ -235,13 +233,18 @@ impl GreekLetterCursor {
         let mut the_letter = '\u{0000}';
         let mut diacritics:u32 = 0;
 
-        let mut iter = chunk[self.offset - chunk_start..].nfd();//chars(); //
+        let mut iter = chunk[self.offset - chunk_start..].chars(); //nfd();//
         let mut ch = iter.next().unwrap();
         //println!("next boundary: offset: {} {}", self.offset, ch);
         
         loop {
                 if the_letter == '\u{0000}' && !unicode_normalization::char::is_combining_mark(ch) {
-                    if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
+                    if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
+                        //PUA conversion
+                        the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
+                        diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
+                    }
+                    else if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
                         //PUA conversion
                         the_letter = GREEK_PUA[ch as usize - 0xEAF0].0;
                         diacritics = GREEK_PUA[ch as usize - 0xEAF0].1;
@@ -646,7 +649,16 @@ pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
         if a_letter.is_none() || b_letter.is_none() {
             break;
         }
-        //check range of letters
+
+        /*
+        //skip non-greek chars if option is set
+        if ((compareType & _HK_IGNORE_UNKNOWN_CHARS) == _HK_IGNORE_UNKNOWN_CHARS && type1 == NOCHAR) {
+            continue;
+        }
+        else if ((compareType & _HK_IGNORE_UNKNOWN_CHARS) == _HK_IGNORE_UNKNOWN_CHARS && type2 == NOCHAR) {
+            continue;
+        }
+        */
 
         let lettera = a_letter.as_ref().unwrap().letter as usize;
         let letterb = b_letter.as_ref().unwrap().letter as usize;
