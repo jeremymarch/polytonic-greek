@@ -98,29 +98,16 @@ pub struct GreekLetterHolder<'a> {
     cursor: GreekLetterCursor,
     cursor_back: GreekLetterCursor,
 }
-
+/*
 impl<'a> GreekLetterHolder<'a> {
     /*
     #[inline]
-
-    /// View the underlying data (the part yet to be iterated) as a slice of the original string.
-    ///
-    /// ```rust
-    /// # use unicode_segmentation::UnicodeSegmentation;
-    /// let mut iter = "abc".graphemes(true);
-    /// assert_eq!(iter.as_str(), "abc");
-    /// iter.next();
-    /// assert_eq!(iter.as_str(), "bc");
-    /// iter.next();
-    /// iter.next();
-    /// assert_eq!(iter.as_str(), "");
-    /// ```
     ///pub fn as_str(&self) -> &'a str {
     ///    &self.string[self.cursor.cur_cursor()..self.cursor_back.cur_cursor()]
     ///}
     */
 }
-
+*/
 impl<'a> Iterator for GreekLetterHolder<'a> {
     type Item = HGKLetter;
 
@@ -158,7 +145,7 @@ impl<'a> DoubleEndedIterator for GreekLetterHolder<'a> {
 */
 
 #[inline]
-pub fn new_gkletters(s: & str) -> GreekLetterHolder {
+pub fn new_gkletters(s: &str) -> GreekLetterHolder {
     let len = s.len();
     GreekLetterHolder {
         string: s,
@@ -228,13 +215,14 @@ impl GreekLetterCursor {
     pub fn next_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<HGKLetter>, GreekLetterError> {
 
         if self.offset >= self.len {
-            //println!("herehere: {}", self.offset);
-            return Ok(None);
+            unreachable!("should never reach here");
+            //return Ok(None);
         }
+
         let mut the_letter = '\u{0000}';
         let mut diacritics:u32 = 0;
 
-        let mut iter = chunk[self.offset - chunk_start..].chars(); //nfd();//
+        let mut iter = chunk[self.offset - chunk_start..].chars(); //nfd()
         let mut ch = iter.next().unwrap();
         //println!("next boundary: offset: {} {}", self.offset, ch);
         
@@ -348,32 +336,21 @@ impl GreekLetterCursor {
                 self.resuming = true;
                 return Err(GreekLetterError::PrevChunk);
             }
-            if self.resuming {
-                self.cat_before = Some(self.grapheme_category(ch));
+
+            self.offset -= ch.len_utf8();
+
+            
+            if let Some(prev_ch) = iter.next() {
+                ch = prev_ch;
+            } else if self.offset == 0 {
+                self.decide(true);
             } else {
-                self.offset -= ch.len_utf8();
-                self.cat_after = self.cat_before.take();
-                self.state = GraphemeState::Unknown;
-                if let Some(ris_count) = self.ris_count {
-                    self.ris_count = if ris_count > 0 { Some(ris_count - 1) } else { None };
-                }
-                if let Some(prev_ch) = iter.next() {
-                    ch = prev_ch;
-                    self.cat_before = Some(self.grapheme_category(ch));
-                } else if self.offset == 0 {
-                    self.decide(true);
-                } else {
-                    self.resuming = true;
-                    self.cat_after = Some(self.grapheme_category(ch));
-                    return Err(GreekLetterError::PrevChunk);
-                }
+                return Err(GreekLetterError::PrevChunk);
             }
-            self.resuming = true;
+            
             if self.is_boundary(chunk, chunk_start)? {
-                self.resuming = false;
                 return Ok(Some(self.offset));
             }
-            self.resuming = false;
         }
     }
 }
@@ -385,21 +362,36 @@ impl GreekLetterCursor {
 impl HGKLetter {
     fn from_str(l:&str) -> HGKLetter {
         let mut diacritics:u32 = 0;
-        let mut bare_letter: char = '\u{0000}';
-        for (i, c) in l.nfd().enumerate() {
+        let mut the_letter: char = '\u{0000}';
+        for (i, ch) in l.chars().enumerate() {
             if i == 0 {
-                assert!( !hgk_is_combining(c) ); //"First char of letter is a combining mark.");
-                
-                if c as u32 >= 0xEAF0 && c as u32 <= 0xEB8A {
-                    bare_letter = GREEK_PUA[c as usize - 0xEAF0].0;
-                    diacritics = GREEK_PUA[c as usize - 0xEAF0].1;
-                }
-                else {
-                   bare_letter = c;
-                }
+                assert!( !hgk_is_combining(ch) ); //"First char of letter is a combining mark.");
+
+                    if ch as u32 >= 0x0370 && ch as u32 <= 0x03FF {
+                        //extended greek conversion
+                        the_letter = GREEK_BASIC[ch as usize - 0x0370].0;
+                        diacritics = GREEK_BASIC[ch as usize - 0x0370].1;
+
+                        if the_letter == NOT_ACCENTABLE_CHAR {
+                            the_letter = ch;
+                        }
+                    }
+                    else if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
+                        //extended greek conversion
+                        the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
+                        diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
+                    }
+                    else if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
+                        //PUA conversion
+                        the_letter = GREEK_PUA[ch as usize - 0xEAF0].0;
+                        diacritics = GREEK_PUA[ch as usize - 0xEAF0].1;
+                    }
+                    else {
+                       the_letter = ch;
+                    }                
             }
             else {
-                match c {
+                match ch {
                     '\u{0300}' => diacritics |= HGK_GRAVE,
                     '\u{0301}' => diacritics |= HGK_ACUTE,
                     '\u{0304}' => diacritics |= HGK_MACRON,
@@ -415,7 +407,7 @@ impl HGKLetter {
             }
         }
         
-        HGKLetter { letter: bare_letter, diacritics }
+        HGKLetter { letter: the_letter, diacritics }
     }
 /*
 order:
@@ -485,11 +477,7 @@ COMBINING_UNDERDOT
             _ => s.into_iter().nfc().collect::<String>()
         }  
     }
-/*
-    fn to_string_pua(&self) -> String {
 
-    }
-*/
     fn toggle_diacritic(&mut self, d:u32, on_only:bool) {
         if !self.is_legal(d) {
             return;
@@ -642,6 +630,15 @@ pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode
     letter.to_string(mode)
 }
 
+pub fn hgk_compare_sqlite(s1: &str, s2: &str) -> Ordering {
+    match hgk_compare(s1, s2, 0xFFFFFFFF) {
+        1 => Ordering::Greater,
+        -1 => Ordering::Less,
+        _ => Ordering::Equal
+    }
+}
+
+//set compare_type to 0xFFFF for diacritic insensitive
 pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
     let mut a1 = a.gkletters();
     let mut b1 = b.gkletters();
@@ -733,11 +730,6 @@ pub fn hgk_is_combining(c:char) -> bool {
     }
 }
 
-/*
-fn accent_recessive(s:&str) -> String {
-
-}
-*/
 pub fn hgk_transliterate(input:usize) -> char {
     if (0x0061..=0x007A).contains(&input) {
         GREEK_LOWER[input - 0x0061]
@@ -834,6 +826,7 @@ mod tests {
 
     #[test]
     fn test_compare() {
+
         assert_eq!( hgk_compare("α", "α", 0), 0);
         assert_eq!( hgk_compare("α", "Α", 0), 0);
         assert_eq!( hgk_compare("Α", "Α", 0), 0);
@@ -848,9 +841,14 @@ mod tests {
 
         assert_eq!( hgk_compare("αβ", "α", 0), 1);
         assert_eq!( hgk_compare("α", "αβ", 0), -1);
-
         assert_eq!( hgk_compare("αβ", "β", 0), -1);
         assert_eq!( hgk_compare("β", "αβ", 0), 1);
+      
+        assert_eq!( hgk_compare("ἄ", "α", 0xFFFFFFFF), 0);
+        assert_eq!( hgk_compare_sqlite("α", "β"), Ordering::Less );
+        assert_eq!( hgk_compare_sqlite("β", "α"), Ordering::Greater );
+        assert_eq!( hgk_compare_sqlite("ἄ", "α"), Ordering::Equal );
+        assert_eq!( hgk_compare_sqlite("α", "ἄ"), Ordering::Equal );
     }
 
     #[test]
@@ -859,6 +857,86 @@ mod tests {
             Ok(()) => (),
             Err(error) => panic!("Error: {:?}", error)
         };
+    }
+
+    #[test]
+    fn native_unicode() {
+        assert_eq!("\u{EAF0}".nfd().next(), Some('\u{EAF0}'));
+        assert_eq!("\u{EAF0}".nfd().count(), 1);
+
+        let s = "ἄβί".to_string();
+        let a = s.nfd();
+        assert_eq!(a.count(), 6);
+        
+        //let z4 = "\u{EAF0}".nfd();
+        //println!("test pua: {}", z4);
+
+        //let str = "ἄλφά";
+        //let str2 = str.nfd().chars().iter().filter(|x| !unicode_normalization::char::is_combining_mark(x))
+
+        assert_eq!(compose('A','\u{30a}'), Some('Å'));
+
+        let s = "ÅΩ";
+        let c = s.nfc().collect::<String>();
+        assert_eq!(c, "ÅΩ");
+
+        assert_eq!(compose('\u{03B1}','\u{0301}'), Some('\u{03AC}'));
+        assert_eq!(compose('\u{03B1}','\u{0301}'), Some('\u{03AC}'));
+        assert_eq!('a','a');
+
+        let a = "\u{03B1}\u{0301}";
+        let b = "\u{03AC}";
+        assert_ne!(a, b);
+
+        let s = String::from("ἄ");
+        let _v: Vec<char> = s.chars().collect();
+    }
+
+    #[test]
+    fn vowel_lengths() {
+        assert_eq!('α'.is_long_or_short(), true);
+        assert_eq!('α'.is_long(), false);
+        assert_eq!('α'.is_short(), false);
+        assert_eq!('ε'.is_long_or_short(), false);
+        assert_eq!('ε'.is_long(), false);
+        assert_eq!('ε'.is_short(), true);
+        assert_eq!('η'.is_long_or_short(), false);
+        assert_eq!('η'.is_long(), true);
+        assert_eq!('η'.is_short(), false);
+        assert_eq!('ι'.is_long_or_short(), true);
+        assert_eq!('ι'.is_long(), false);
+        assert_eq!('ι'.is_short(), false);
+        assert_eq!('ο'.is_long_or_short(), false);
+        assert_eq!('ο'.is_long(), false);
+        assert_eq!('ο'.is_short(), true);
+        assert_eq!('υ'.is_long_or_short(), true);
+        assert_eq!('υ'.is_long(), false);
+        assert_eq!('υ'.is_short(), false);
+        assert_eq!('ω'.is_long_or_short(), false);
+        assert_eq!('ω'.is_long(), true);
+        assert_eq!('ω'.is_short(), false);
+
+        assert_eq!('Α'.is_long_or_short(), true);
+        assert_eq!('Α'.is_long(), false);
+        assert_eq!('Α'.is_short(), false);
+        assert_eq!('Ε'.is_long_or_short(), false);
+        assert_eq!('Ε'.is_long(), false);
+        assert_eq!('Ε'.is_short(), true);
+        assert_eq!('Η'.is_long_or_short(), false);
+        assert_eq!('Η'.is_long(), true);
+        assert_eq!('Η'.is_short(), false);
+        assert_eq!('Ι'.is_long_or_short(), true);
+        assert_eq!('Ι'.is_long(), false);
+        assert_eq!('Ι'.is_short(), false);
+        assert_eq!('Ο'.is_long_or_short(), false);
+        assert_eq!('Ο'.is_long(), false);
+        assert_eq!('Ο'.is_short(), true);
+        assert_eq!('Υ'.is_long_or_short(), true);
+        assert_eq!('Υ'.is_long(), false);
+        assert_eq!('Υ'.is_short(), false);
+        assert_eq!('Ω'.is_long_or_short(), false);
+        assert_eq!('Ω'.is_long(), true);
+        assert_eq!('Ω'.is_short(), false);
     }
 
     #[test]
@@ -931,74 +1009,14 @@ mod tests {
         assert_eq!( hgk_convert("\u{EB07}", HgkUnicodeMode::CombiningOnly), "α\u{0304}\u{0313}\u{0301}");
         assert_eq!( hgk_convert("α\u{0304}\u{0313}\u{0301}", HgkUnicodeMode::PrecomposedPUA), "\u{EB07}");
 
-        /*
-
-
-        let s = "ἄβί".to_string();
-        let a = s.nfd();
-        assert_eq!(a.count(), 6);
-        */
-        //let z4 = "\u{EAF0}".nfd();
-        //println!("test pua: {}", z4);
-
-        //let str = "ἄλφά";
-        //let str2 = str.nfd().chars().iter().filter(|x| !unicode_normalization::char::is_combining_mark(x))
-
         assert_eq!(GREEK_LOWER_PUA.len() as i32 - 1, 47);
 
         assert_eq!(MACRON_AND_SMOOTH, HGK_MACRON | HGK_SMOOTH);
-
-        assert_eq!("\u{EAF0}".nfd().next(), Some('\u{EAF0}'));
-        assert_eq!("\u{EAF0}".nfd().count(), 1);
 
         assert_eq!(hgk_transliterate(0x0000), '\u{0000}');
         assert_eq!(hgk_transliterate(0x0040), '\u{0000}');
         assert_eq!(hgk_transliterate(0x0061), '\u{03B1}');
         assert_eq!(hgk_transliterate(0x007B), '\u{0000}');
-
-        assert_eq!('α'.is_long_or_short(), true);
-        assert_eq!('α'.is_long(), false);
-        assert_eq!('α'.is_short(), false);
-        assert_eq!('ε'.is_long_or_short(), false);
-        assert_eq!('ε'.is_long(), false);
-        assert_eq!('ε'.is_short(), true);
-        assert_eq!('η'.is_long_or_short(), false);
-        assert_eq!('η'.is_long(), true);
-        assert_eq!('η'.is_short(), false);
-        assert_eq!('ι'.is_long_or_short(), true);
-        assert_eq!('ι'.is_long(), false);
-        assert_eq!('ι'.is_short(), false);
-        assert_eq!('ο'.is_long_or_short(), false);
-        assert_eq!('ο'.is_long(), false);
-        assert_eq!('ο'.is_short(), true);
-        assert_eq!('υ'.is_long_or_short(), true);
-        assert_eq!('υ'.is_long(), false);
-        assert_eq!('υ'.is_short(), false);
-        assert_eq!('ω'.is_long_or_short(), false);
-        assert_eq!('ω'.is_long(), true);
-        assert_eq!('ω'.is_short(), false);
-
-        assert_eq!('Α'.is_long_or_short(), true);
-        assert_eq!('Α'.is_long(), false);
-        assert_eq!('Α'.is_short(), false);
-        assert_eq!('Ε'.is_long_or_short(), false);
-        assert_eq!('Ε'.is_long(), false);
-        assert_eq!('Ε'.is_short(), true);
-        assert_eq!('Η'.is_long_or_short(), false);
-        assert_eq!('Η'.is_long(), true);
-        assert_eq!('Η'.is_short(), false);
-        assert_eq!('Ι'.is_long_or_short(), true);
-        assert_eq!('Ι'.is_long(), false);
-        assert_eq!('Ι'.is_short(), false);
-        assert_eq!('Ο'.is_long_or_short(), false);
-        assert_eq!('Ο'.is_long(), false);
-        assert_eq!('Ο'.is_short(), true);
-        assert_eq!('Υ'.is_long_or_short(), true);
-        assert_eq!('Υ'.is_long(), false);
-        assert_eq!('Υ'.is_short(), false);
-        assert_eq!('Ω'.is_long_or_short(), false);
-        assert_eq!('Ω'.is_long(), true);
-        assert_eq!('Ω'.is_short(), false);
         
         let _aa = HGKLetter::from_str("\u{EAF0}");
 
@@ -1022,22 +1040,6 @@ mod tests {
         s.toggle_diacritic(HGK_CIRCUMFLEX, false);
         assert_ne!(s.diacritics & HGK_CIRCUMFLEX, HGK_CIRCUMFLEX);
 
-        assert_eq!(compose('A','\u{30a}'), Some('Å'));
-
-        let s = "ÅΩ";
-        let c = s.nfc().collect::<String>();
-        assert_eq!(c, "ÅΩ");
-
-    	assert_eq!(compose('\u{03B1}','\u{0301}'), Some('\u{03AC}'));
-    	assert_eq!(compose('\u{03B1}','\u{0301}'), Some('\u{03AC}'));
-    	assert_eq!('a','a');
-
-        let a = "\u{03B1}\u{0301}";
-        let b = "\u{03AC}";
-        assert_ne!(a, b);
-
-        let s = String::from("ἄ");
-        let _v: Vec<char> = s.chars().collect();
  
         let mut a1 = HGKLetter::from_str("υ");
         assert_eq!(a1.letter, 'υ');
