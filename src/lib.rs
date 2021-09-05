@@ -5,6 +5,7 @@
 extern crate alloc;
 use alloc::string::String;
 //use alloc::string::ToString;
+use std::cmp::Ordering;
 
 use core::cmp;
 
@@ -136,7 +137,7 @@ impl<'a> Iterator for GreekLetterHolder<'a> {
             return None;
         }
 
-        let r = self.cursor.next_boundary(&self.string, 0);
+        let r = self.cursor.next_boundary(self.string, 0);
         //println!("next: {} {} {}", start, self.cursor_back.cur_cursor(), r.as_ref().unwrap().as_ref().unwrap().letter);
 
         Some(r.unwrap().unwrap())
@@ -202,8 +203,8 @@ pub enum GreekLetterError {
 impl GreekLetterCursor {
     pub fn new(offset: usize, len: usize) -> GreekLetterCursor {
         GreekLetterCursor {
-            offset: offset,
-            len: len
+            offset,
+            len
         }
     }
 
@@ -280,7 +281,7 @@ impl GreekLetterCursor {
                 else {
                     //self.offset += ch.len_utf8();
                     //else boundary character, return
-                    return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
+                    return Ok(Some(HGKLetter{letter:the_letter, diacritics}));
                 }
 
                 self.offset += ch.len_utf8();
@@ -291,7 +292,7 @@ impl GreekLetterCursor {
                     //at the end
                     //println!("herehere2: {}", self.offset);
                     //return Ok(None);
-                    return Ok(Some(HGKLetter{letter:the_letter, diacritics:diacritics}));
+                    return Ok(Some(HGKLetter{letter:the_letter, diacritics}));
                 }
                 else {
                     return Ok(None);
@@ -387,7 +388,7 @@ impl HGKLetter {
         let mut bare_letter: char = '\u{0000}';
         for (i, c) in l.nfd().enumerate() {
             if i == 0 {
-                assert_eq!(unicode_normalization::char::is_combining_mark(c), false); //"First char of letter is a combining mark.");
+                assert!( !hgk_is_combining(c) ); //"First char of letter is a combining mark.");
                 
                 if c as u32 >= 0xEAF0 && c as u32 <= 0xEB8A {
                     bare_letter = GREEK_PUA[c as usize - 0xEAF0].0;
@@ -414,7 +415,7 @@ impl HGKLetter {
             }
         }
         
-        HGKLetter { letter: bare_letter, diacritics: diacritics }
+        HGKLetter { letter: bare_letter, diacritics }
     }
 /*
 order:
@@ -669,21 +670,17 @@ pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
         let letterb = b_letter.as_ref().unwrap().letter as usize;
 
         //if one or both characters are out of the greek range
-        if (lettera < 0x0370 || lettera > 0x03FF) && (letterb < 0x0370 || letterb > 0x03FF) {
-            if lettera < letterb {
-                return -1;
-            }
-            else if lettera > letterb {
-                return 1;
-            }
-            else {
-                return 0;
+        if !(0x0370..=0x03FF).contains(&lettera) && !(0x0370..=0x03FF).contains(&letterb) {
+            match lettera.cmp(&letterb) {
+                 Ordering::Less => return -1,
+                 Ordering::Greater => return 1,
+                 Ordering::Equal => return 0
             }
         }
-        else if lettera < 0x0370 || lettera > 0x03FF { //non-greek sorts before greek 
+        else if !(0x0370..=0x03FF).contains(&lettera) { //non-greek sorts before greek 
             return -1;
         }
-        else if letterb < 0x0370 || letterb > 0x03FF { //non-greek sorts before greek 
+        else if !(0x0370..=0x03FF).contains(&letterb) { //non-greek sorts before greek 
             return 1;
         }
 
@@ -691,11 +688,10 @@ pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
         let b_sort:u32 = GREEK_BASIC[letterb - 0x0370].2;
 
         //if one letter sorts less than the other
-        if a_sort < b_sort {
-            return -1;
-        }
-        else if a_sort > b_sort {
-            return 1;
+        match a_sort.cmp(&b_sort) {
+             Ordering::Less => return -1,
+             Ordering::Greater => return 1,
+             Ordering::Equal => ()
         }
 
         if (a_letter.as_ref().unwrap().diacritics & !compare_type) != (b_letter.as_ref().unwrap().diacritics & !compare_type) {
@@ -709,17 +705,14 @@ pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
     }
     //here we have reached the end of one or both strings and they are still completely equal
 
-    if a_letter.is_none() && b_letter.is_none() //both at end
-    {
-        return 0;
+    if a_letter.is_none() && b_letter.is_none() { //both at end
+        0
     }
-    else if a_letter.is_none() //1 at end
-    {
-        return -1;
+    else if a_letter.is_none() {//1 at end
+        -1
     }
-    else //2 at end
-    {
-        return 1;
+    else { //2 at end
+        1
     }
 }
 
