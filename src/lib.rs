@@ -239,7 +239,16 @@ impl GreekLetterCursor {
         
         loop {
                 if the_letter == '\u{0000}' && !hgk_is_combining(ch) {
-                    if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
+                    if ch as u32 >= 0x0370 && ch as u32 <= 0x03FF {
+                        //extended greek conversion
+                        the_letter = GREEK_BASIC[ch as usize - 0x0370].0;
+                        diacritics = GREEK_BASIC[ch as usize - 0x0370].1;
+
+                        if the_letter == NOT_ACCENTABLE_CHAR {
+                            the_letter = ch;
+                        }
+                    }
+                    else if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
                         //extended greek conversion
                         the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
                         diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
