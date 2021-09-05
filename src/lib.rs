@@ -82,12 +82,12 @@ pub struct HGKLetter {
 }
 
 pub trait GreekLetters {
-    fn gkletters<'a>(&'a self) -> GreekLetterHolder;
+    fn gkletters(&self) -> GreekLetterHolder;
 }
 
 impl GreekLetters for str {
     #[inline]
-    fn gkletters<'a>(&'a self) -> GreekLetterHolder<'a> {
+    fn gkletters(&self) -> GreekLetterHolder {
         new_gkletters(self)
     }
 }
@@ -158,7 +158,7 @@ impl<'a> DoubleEndedIterator for GreekLetterHolder<'a> {
 */
 
 #[inline]
-pub fn new_gkletters<'b>(s: &'b str) -> GreekLetterHolder<'b> {
+pub fn new_gkletters(s: & str) -> GreekLetterHolder {
     let len = s.len();
     GreekLetterHolder {
         string: s,
