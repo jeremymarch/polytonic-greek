@@ -631,6 +631,7 @@ pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode
 }
 
 pub fn hgk_compare_sqlite(s1: &str, s2: &str) -> Ordering {
+    println!("herehere");
     match hgk_compare(s1, s2, 0xFFFFFFFF) {
         1 => Ordering::Greater,
         -1 => Ordering::Less,
@@ -861,6 +862,13 @@ mod tests {
 
     #[test]
     fn native_unicode() {
+
+        //custom sort
+        let mut v = vec!["βββ", "ααα", "ααβ,ωωω", "\u{EB07}αβα", "αα ωωω"];
+        v.sort_by(|a, b| hgk_compare_sqlite(a, b));
+        assert_eq!(v, vec!["αα ωωω", "ααα", "ααβ,ωωω", "\u{EB07}αβα", "βββ"]);
+
+
         assert_eq!("\u{EAF0}".nfd().next(), Some('\u{EAF0}'));
         assert_eq!("\u{EAF0}".nfd().count(), 1);
 
