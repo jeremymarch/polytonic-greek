@@ -57,7 +57,7 @@ fn get_pua_index(letter:char, diacritics:u32) -> i32 {
         BREVE_AND_ROUGH_AND_GRAVE   => 13,
         BREVE_AND_ACUTE             => 14,
         BREVE_AND_GRAVE             => 15,
-        _                           => return -1,
+        _                           => return -1, //yes, return here
     };
     
     match letter {
@@ -130,16 +130,17 @@ impl<'a> Iterator for GreekLetterHolder<'a> {
         Some(r.unwrap().unwrap())
     }
 }
+
 /*
 impl<'a> DoubleEndedIterator for GreekLetterHolder<'a> {
     #[inline]
-    fn next_back(&mut self) -> Option<&'a str> {
+    fn next_back(&mut self) -> Option<HGKLetter> {
         let end = self.cursor_back.cur_cursor();
         if end == self.cursor.cur_cursor() {
             return None;
         }
-        let prev = self.cursor_back.prev_boundary(self.string, 0).unwrap().unwrap();
-        Some(&self.string[prev..end])
+        let prev = self.cursor_back.prev_boundary(self.string, 0);
+        Some(prev.unwrap().unwrap())
     }
 }
 */
@@ -156,36 +157,14 @@ pub fn new_gkletters(s: &str) -> GreekLetterHolder {
 
 #[derive(Clone, Debug)]
 pub struct GreekLetterCursor {
-    // Current cursor position.
     offset: usize,
-    // Total length of the string.
     len: usize
 }
 
-/// An error return indicating that not enough content was available in the
-/// provided chunk to satisfy the query, and that more content must be provided.
 #[derive(PartialEq, Eq, Debug)]
 pub enum GreekLetterError {
-    /// More pre-context is needed. The caller should call `provide_context`
-    /// with a chunk ending at the offset given, then retry the query. This
-    /// will only be returned if the `chunk_start` parameter is nonzero.
-    PreContext(usize),
-
-    /// When requesting `prev_boundary`, the cursor is moving past the beginning
-    /// of the current chunk, so the chunk before that is requested. This will
-    /// only be returned if the `chunk_start` parameter is nonzero.
-    PrevChunk,
-
-    /// When requesting `next_boundary`, the cursor is moving past the end of the
-    /// current chunk, so the chunk after that is requested. This will only be
-    /// returned if the chunk ends before the `len` parameter provided on
-    /// creation of the cursor.
-    NextChunk,  // requesting chunk following the one given
-
-    /// An error returned when the chunk given does not contain the cursor position.
-    InvalidOffset,
+    InvalidOffset
 }
-
 
 impl GreekLetterCursor {
     pub fn new(offset: usize, len: usize) -> GreekLetterCursor {
@@ -288,7 +267,7 @@ impl GreekLetterCursor {
             }    
         }
     
-/*
+    /*
     /// Find the previous boundary after the current cursor position. Only a part
     /// of the string need be supplied. If the chunk is incomplete, then this
     /// method might return `GreekLetterError::PreContext` or
@@ -322,7 +301,7 @@ impl GreekLetterCursor {
     /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(0)));
     /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(None));
     /// ```
-    pub fn prev_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<usize>, GreekLetterError> {
+    pub fn prev_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<HGKLetter>, GreekLetterError> {
         if self.offset == 0 {
             return Ok(None);
         }
@@ -333,7 +312,6 @@ impl GreekLetterCursor {
         let mut ch = iter.next().unwrap();
         loop {
             if self.offset == chunk_start {
-                self.resuming = true;
                 return Err(GreekLetterError::PrevChunk);
             }
 
@@ -348,9 +326,6 @@ impl GreekLetterCursor {
                 return Err(GreekLetterError::PrevChunk);
             }
             
-            if self.is_boundary(chunk, chunk_start)? {
-                return Ok(Some(self.offset));
-            }
         }
     }
 }
@@ -631,7 +606,6 @@ pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode
 }
 
 pub fn hgk_compare_sqlite(s1: &str, s2: &str) -> Ordering {
-    println!("herehere");
     match hgk_compare(s1, s2, 0xFFFFFFFF) {
         1 => Ordering::Greater,
         -1 => Ordering::Less,
