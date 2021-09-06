@@ -184,7 +184,7 @@ impl GreekLetterCursor {
 
     #[inline]
     /// The current offset of the cursor. Equal to the last value provided to
-    /// `new()` or `set_cursor()`, or returned from `next_boundary()` or
+    /// `new()` or `set_cursor()`, or returned from `nxext_boundary()` or
     /// `prev_boundary()`.
     pub fn cur_cursor(&self) -> usize {
         self.offset
@@ -208,11 +208,11 @@ impl GreekLetterCursor {
         loop {
                 if the_letter == '\u{0000}' && !hgk_is_combining(ch) {
                     if ch as u32 >= 0x0370 && ch as u32 <= 0x03FF {
-                        //extended greek conversion
+                        //basic greek conversion
                         the_letter = GREEK_BASIC[ch as usize - 0x0370].0;
                         diacritics = GREEK_BASIC[ch as usize - 0x0370].1;
 
-                        if the_letter == NOT_ACCENTABLE_CHAR {
+                        if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
                             the_letter = ch;
                         }
                     }
@@ -343,7 +343,7 @@ impl HGKLetter {
                 assert!( !hgk_is_combining(ch) ); //"First char of letter is a combining mark.");
 
                     if ch as u32 >= 0x0370 && ch as u32 <= 0x03FF {
-                        //extended greek conversion
+                        //basic greek conversion
                         the_letter = GREEK_BASIC[ch as usize - 0x0370].0;
                         diacritics = GREEK_BASIC[ch as usize - 0x0370].1;
 
@@ -726,7 +726,7 @@ mod tests {
     use std::error::Error;
     use std::path::Path;
 
-    fn docsvtest() -> Result<(), Box<dyn Error>> {
+    fn do_csv_test() -> Result<(), Box<dyn Error>> {
         //println!("{:?}", env::current_dir().unwrap());
         let csvfile = "gktest.csv";
         if !Path::new(csvfile).is_file() {
@@ -820,15 +820,21 @@ mod tests {
         assert_eq!( hgk_compare("β", "αβ", 0), 1);
       
         assert_eq!( hgk_compare("ἄ", "α", 0xFFFFFFFF), 0);
+
         assert_eq!( hgk_compare_sqlite("α", "β"), Ordering::Less );
         assert_eq!( hgk_compare_sqlite("β", "α"), Ordering::Greater );
         assert_eq!( hgk_compare_sqlite("ἄ", "α"), Ordering::Equal );
         assert_eq!( hgk_compare_sqlite("α", "ἄ"), Ordering::Equal );
+
+        //custom sort
+        let mut v = vec!["βββ", "ααα", "ααβ,ωωω", "\u{EB07}αβα", "αα ωωω"];
+        v.sort_by(|a, b| hgk_compare_sqlite(a, b));
+        assert_eq!(v, vec!["αα ωωω", "ααα", "ααβ,ωωω", "\u{EB07}αβα", "βββ"]);
     }
 
     #[test]
     fn csv_tests() {
-        match docsvtest() {
+        match do_csv_test() {
             Ok(()) => (),
             Err(error) => panic!("Error: {:?}", error)
         };
@@ -836,12 +842,9 @@ mod tests {
 
     #[test]
     fn native_unicode() {
-
-        //custom sort
-        let mut v = vec!["βββ", "ααα", "ααβ,ωωω", "\u{EB07}αβα", "αα ωωω"];
-        v.sort_by(|a, b| hgk_compare_sqlite(a, b));
-        assert_eq!(v, vec!["αα ωωω", "ααα", "ααβ,ωωω", "\u{EB07}αβα", "βββ"]);
-
+        //nfd-> nfc -> nfd round trip
+        assert_eq!("\u{1F04}".nfd().collect::<String>(), "\u{03B1}\u{0313}\u{0301}");
+        assert_eq!("\u{03B1}\u{0313}\u{0301}".nfc().collect::<String>(), "\u{1F04}");
 
         assert_eq!("\u{EAF0}".nfd().next(), Some('\u{EAF0}'));
         assert_eq!("\u{EAF0}".nfd().count(), 1);
@@ -922,12 +925,7 @@ mod tests {
     }
 
     #[test]
-    fn mytest() {
-        //println!("{:?}", env::current_dir().unwrap());
-
-        assert_eq!(hex_to_string("03B1 0304 03B2"), "α\u{0304}β");
-
-
+    fn iterator_tests() {
         let s = "α\u{0304}\u{0313}\u{0301}βα\u{0313}\u{0301}";//"\u{EB07}βἄ";
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
         let b: &[_] = &[HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_MACRON | HGK_SMOOTH},HGKLetter{letter:'β', diacritics:0},HGKLetter{letter:'α', diacritics:HGK_ACUTE | HGK_SMOOTH} ];
@@ -983,6 +981,57 @@ mod tests {
         let s = "\u{EB07}βἄ";
         let xxx = s.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:0}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>();
         assert_eq!(xxx, "αβα");
+    }
+
+    
+    #[test]
+    fn convert_tests() {
+        for l in 0x0370..0x03FF {
+            let letter = std::char::from_u32(l).unwrap().to_string();
+
+            let a = letter.nfd().collect::<String>();
+            let b = a.nfc().collect::<String>();
+            //println!("{:X}, {}, {}, {}", l, letter, a, b);
+
+            //where the round trip should not be equal
+            if l != 0x0370 && l != 0x0374 && l != 0x037E && l != 0x0387  {
+                assert_eq!(letter, b);
+                
+                let aa = hgk_convert(&letter, HgkUnicodeMode::CombiningOnly);
+                //where hgk_convert is different from nfd()
+                if l != 0x0385 && l != 0x03D3 && l != 0x03D4 {
+                    assert_eq!(aa, a);
+                }
+            }
+        }
+
+
+        for l in 0x1F00..0x1FFF {
+            let letter = std::char::from_u32(l).unwrap().to_string();
+
+            let a = letter.nfd().collect::<String>();
+            let b = a.nfc().collect::<String>();
+            println!("{:X}, {}, {}, {}", l, letter, a, b);
+
+            //where the round trip should not be equal
+            if l != 0x1F71 && l != 0x1F73 && l != 0x1F75 && l != 0x1F77 && l != 0x1F79 && l != 0x1F7B && l != 0x1F7D && l != 0x1FBB && l != 0x1FBE && l != 0x1FC9 && l != 0x1FCB && l != 0x1FD3 && l != 0x1FDB && l != 0x1FE3 && l != 0x1FEB && l != 0x1FEE && l != 0x1FEF && l != 0x1FF9 && l != 0x1FFB && l != 0x1FFD {
+                assert_eq!(letter, b);
+
+                let aa = hgk_convert(&letter, HgkUnicodeMode::CombiningOnly);
+                //where hgk_convert is different from nfd()
+                if l != 0x1F16 && l != 0x1F17 && l != 0x1F1E && l != 0x1F1F && l != 0x1F46 && l != 0x1F47 && l != 0x1F4E && l != 0x1F4F && l != 0x1F58 && l != 0x1F5A && l != 0x1F5C && l != 0x1F5E && l != 0x1F7E && l != 0x1F7F && l != 0x1FB5 && l != 0x1FBD && l != 0x1FBF && l != 0x1FC0 && l != 0x1FC1 && l != 0x1FC5 && l != 0x1FCD && l != 0x1FCE && l != 0x1FCF && l != 0x1FD4 && l != 0x1FD5 && l != 0x1FDC && l != 0x1FDD && l != 0x1FDE && l != 0x1FDF && l != 0x1FEC && l != 0x1FED && l != 0x1FF0 && l != 0x1FF1 && l != 0x1FF5 && l != 0x1FFE {
+                    assert_eq!(aa, a);
+                }
+            }
+        }
+
+    }
+    
+    #[test]
+    fn mytest() {
+        //println!("{:?}", env::current_dir().unwrap());
+
+        assert_eq!(hex_to_string("03B1 0304 03B2"), "α\u{0304}β");
 
         assert_eq!( hgk_strip_diacritics("ἄβ"), "αβ" );
         assert_eq!( hgk_strip_diacritics("\u{EB07}"), "α" );
@@ -1037,8 +1086,6 @@ mod tests {
 
         assert_eq!(hgk_toggle_diacritic_str("α", HGK_UNDERDOT, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{03B1}\u{0323}");
-
-
 
         assert_eq!(hgk_toggle_diacritic_str("ἀ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{EB04}");
