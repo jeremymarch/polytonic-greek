@@ -318,10 +318,10 @@ const HGK_OMEGA_SORT:u32 = 27;
 //or NOT_ACCENTABLE_CHAR or NOCHAR
 //pub(crate) const COMPOSITION_TABLE_KV: &[(u32, char, )] = &[
 pub(crate) const GREEK_BASIC: &[(char, u32, u32)] = &[
-    /* 0370 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
-    /* 0371 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
-    /* 0372 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
-    /* 0373 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
+    /* 0370 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ), //capital heta
+    /* 0371 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ), //lower case heta
+    /* 0372 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ), //capital sampi
+    /* 0373 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ), //lower case sampi
     /* 0374 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
     /* 0375 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
     /* 0376 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
@@ -416,9 +416,9 @@ pub(crate) const GREEK_BASIC: &[(char, u32, u32)] = &[
     /* 03CF */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
     /* 03D0 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
     /* 03D1 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
-    /* 03D2 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
-    /* 03D3 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
-    /* 03D4 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
+    /* 03D2 */ ( '\u{03D2}', HGK_NO_DIACRITICS, HGK_UPSILON_SORT ), /* hook upsilon */
+    /* 03D3 */ ( '\u{03D2}', HGK_ACUTE, HGK_UPSILON_SORT ), /* hook upsilon */
+    /* 03D4 */ ( '\u{03D2}', HGK_DIAERESIS, HGK_UPSILON_SORT ), /* hook upsilon */
     /* 03D5 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
     /* 03D6 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
     /* 03D7 */ ( '\u{0000}', HGK_NO_DIACRITICS, HGK_NO_SORT ),
@@ -702,7 +702,7 @@ pub(crate) const GREEK_EXTENDED: &[(char, u32)] = &[
     /* 1FE9 */ ( '\u{03A5}', HGK_MACRON ),
     /* 1FEA */ ( '\u{03A5}', HGK_GRAVE ),
     /* 1FEB */ ( '\u{03A5}', HGK_ACUTE ),
-    /* 1FEC */ ( '\u{0000}', HGK_NO_DIACRITICS ),
+    /* 1FEC */ ( '\u{03A1}', HGK_ROUGH ),
     /* 1FED */ ( '\u{0000}', HGK_NO_DIACRITICS ),
     /* 1FEE */ ( '\u{0000}', HGK_NO_DIACRITICS ),
     /* 1FEF */ ( '\u{0000}', HGK_NO_DIACRITICS ),

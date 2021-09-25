@@ -220,11 +220,17 @@ impl GreekLetterCursor {
                         //extended greek conversion
                         the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
                         diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
+                        if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
+                            the_letter = ch;
+                        }
                     }
                     else if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
                         //PUA conversion
                         the_letter = GREEK_PUA[ch as usize - 0xEAF0].0;
                         diacritics = GREEK_PUA[ch as usize - 0xEAF0].1;
+                        if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
+                            the_letter = ch;
+                        }
                     }
                     else {
                        the_letter = ch;
@@ -268,39 +274,6 @@ impl GreekLetterCursor {
         }
     
     /*
-    /// Find the previous boundary after the current cursor position. Only a part
-    /// of the string need be supplied. If the chunk is incomplete, then this
-    /// method might return `GreekLetterError::PreContext` or
-    /// `GreekLetterError::PrevChunk`. In the former case, the caller should
-    /// call `provide_context` with the requested chunk, then retry. In the
-    /// latter case, the caller should provide the chunk preceding the one
-    /// given, then retry.
-    ///
-    /// See `is_boundary` for expectations on the provided chunk.
-    ///
-    /// ```rust
-    /// # use unicode_segmentation::GreekLetterCursor;
-    /// let flags = "\u{1F1F7}\u{1F1F8}\u{1F1EE}\u{1F1F4}";
-    /// let mut cursor = GreekLetterCursor::new(12, flags.len(), false);
-    /// assert_eq!(cursor.prev_boundary(flags, 0), Ok(Some(8)));
-    /// assert_eq!(cursor.prev_boundary(flags, 0), Ok(Some(0)));
-    /// assert_eq!(cursor.prev_boundary(flags, 0), Ok(None));
-    /// ```
-    ///
-    /// And an example that uses partial strings (note the exact return is not
-    /// guaranteed, and may be `PrevChunk` or `PreContext` arbitrarily):
-    ///
-    /// ```rust
-    /// # use unicode_segmentation::{GreekLetterCursor, GreekLetterError};
-    /// let s = "abcd";
-    /// let mut cursor = GreekLetterCursor::new(4, s.len(), false);
-    /// assert_eq!(cursor.prev_boundary(&s[2..4], 2), Ok(Some(3)));
-    /// assert_eq!(cursor.prev_boundary(&s[2..4], 2), Err(GreekLetterError::PrevChunk));
-    /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(2)));
-    /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(1)));
-    /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(Some(0)));
-    /// assert_eq!(cursor.prev_boundary(&s[0..2], 0), Ok(None));
-    /// ```
     pub fn prev_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<HGKLetter>, GreekLetterError> {
         if self.offset == 0 {
             return Ok(None);
@@ -587,10 +560,10 @@ impl HGKIsGreekVowel for char {
     }
 }
 
-pub fn hgk_strip_diacritics(l:&str) -> String {
+pub fn hgk_strip_diacritics(l:&str, turnoff_diacritics:u32) -> String {
     //let b = l.gkletters();
     //println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
-    l.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:0}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>()
+    l.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:a.diacritics & !turnoff_diacritics}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>()
 }
 
 pub fn hgk_convert(l:&str, mode:HgkUnicodeMode) -> String {
@@ -991,20 +964,27 @@ mod tests {
 
             let a = letter.nfd().collect::<String>();
             let b = a.nfc().collect::<String>();
-            //println!("{:X}, {}, {}, {}", l, letter, a, b);
+            println!("{:X}, {}, {}, {}", l, letter, a, b);
 
             //where the round trip should not be equal
-            if l != 0x0370 && l != 0x0374 && l != 0x037E && l != 0x0387  {
-                assert_eq!(letter, b);
-                
-                let aa = hgk_convert(&letter, HgkUnicodeMode::CombiningOnly);
-                //where hgk_convert is different from nfd()
-                if l != 0x0385 && l != 0x03D3 && l != 0x03D4 {
-                    assert_eq!(aa, a);
+            match l {
+                0x0374 => (), // numeral sign
+                0x037E => (), // question mark
+                0x0387 => (), // raised dot
+                _ => {             
+                    assert_eq!(letter, b);
+                    
+                    let aa = hgk_convert(&letter, HgkUnicodeMode::CombiningOnly);
+                    //where hgk_convert is different from nfd()
+                    match l {
+                            0x0385 => (), // GREEK DIALYTIKA TONOS
+                            _ => {
+                            assert_eq!(aa, a);
+                        }
+                    }                       
                 }
             }
         }
-
 
         for l in 0x1F00..0x1FFF {
             let letter = std::char::from_u32(l).unwrap().to_string();
@@ -1014,17 +994,57 @@ mod tests {
             println!("{:X}, {}, {}, {}", l, letter, a, b);
 
             //where the round trip should not be equal
-            if l != 0x1F71 && l != 0x1F73 && l != 0x1F75 && l != 0x1F77 && l != 0x1F79 && l != 0x1F7B && l != 0x1F7D && l != 0x1FBB && l != 0x1FBE && l != 0x1FC9 && l != 0x1FCB && l != 0x1FD3 && l != 0x1FDB && l != 0x1FE3 && l != 0x1FEB && l != 0x1FEE && l != 0x1FEF && l != 0x1FF9 && l != 0x1FFB && l != 0x1FFD {
-                assert_eq!(letter, b);
+            match l  {
+                0x1F71 => (), //alpha with acute -> tonos
+                0x1F73 => (), //epsilon with acute -> tonos
+                0x1F75 => (), //eta with acute -> tonos
+                0x1F77 => (), //iota with acute -> tonos
+                0x1F79 => (), //omicron with acute -> tonos
+                0x1F7B => (), //upsilon with acute -> tonos
+                0x1F7D => (), //omega with acute -> tonos
+                0x1FBB => (), //cap alpha with acute -> tonos
+                0x1FBE => (), //iota adscript -> small iota (03B9)
+                0x1FC9 => (), //cap epsilon with acute -> tonos
+                0x1FCB => (), //cap eta with acute -> tonos
+                0x1FD3 => (), //iota diaeresis acute -> tonos
+                0x1FDB => (), //cap iota with acute -> tonos
+                0x1FE3 => (), //upsilon diaeresis acute -> tonos
+                0x1FEB => (), //cap upsilon with acute -> tonos
+                0x1FEE => (), //diaeresis tonos
+                0x1FEF => (), //grave
+                0x1FF9 => (), //cap omicron with acute -> tonos
+                0x1FFB => (), //cap omega with acute -> tonos
+                0x1FFD => (), //acute
+                _ => {
+                    //otherwise round trip will be equal
+                    assert_eq!(letter, b);
 
-                let aa = hgk_convert(&letter, HgkUnicodeMode::CombiningOnly);
-                //where hgk_convert is different from nfd()
-                if l != 0x1F16 && l != 0x1F17 && l != 0x1F1E && l != 0x1F1F && l != 0x1F46 && l != 0x1F47 && l != 0x1F4E && l != 0x1F4F && l != 0x1F58 && l != 0x1F5A && l != 0x1F5C && l != 0x1F5E && l != 0x1F7E && l != 0x1F7F && l != 0x1FB5 && l != 0x1FBD && l != 0x1FBF && l != 0x1FC0 && l != 0x1FC1 && l != 0x1FC5 && l != 0x1FCD && l != 0x1FCE && l != 0x1FCF && l != 0x1FD4 && l != 0x1FD5 && l != 0x1FDC && l != 0x1FDD && l != 0x1FDE && l != 0x1FDF && l != 0x1FEC && l != 0x1FED && l != 0x1FF0 && l != 0x1FF1 && l != 0x1FF5 && l != 0x1FFE {
-                    assert_eq!(aa, a);
+                    let aa = hgk_convert(&letter, HgkUnicodeMode::CombiningOnly);
+                    //where hgk_convert is different from nfd()
+                    match l  {
+                        0x1FC1 => (), //circumflex diaeresis
+                        0x1FCD => (), //smooth grave
+                        0x1FCE => (), //smooth acute
+                        0x1FCF => (), //smooth cirumflex
+                        0x1FDD => (), //rough grave
+                        0x1FDE => (), //rough acute
+                        0x1FDF => (), //rough circumflex
+                        0x1FED => (), //grave diaeresis
+                        _ => {
+                            assert_eq!(aa, a);
+                        }
+                    }
                 }
             }
         }
 
+        for l in 0xEAF0..0xEB8A {
+            let letter = std::char::from_u32(l).unwrap().to_string();
+
+            let a = hgk_convert(&letter, HgkUnicodeMode::CombiningOnly);
+            let b = hgk_convert(&a, HgkUnicodeMode::PrecomposedPUA);
+            assert_eq!(letter, b);
+        }
     }
     
     #[test]
@@ -1033,9 +1053,9 @@ mod tests {
 
         assert_eq!(hex_to_string("03B1 0304 03B2"), "α\u{0304}β");
 
-        assert_eq!( hgk_strip_diacritics("ἄβ"), "αβ" );
-        assert_eq!( hgk_strip_diacritics("\u{EB07}"), "α" );
-        assert_eq!( hgk_strip_diacritics("α\u{0304}\u{0313}\u{0301}"), "α" );
+        assert_eq!( hgk_strip_diacritics("ἄβ", 0xFFFFFFFF), "αβ" );
+        assert_eq!( hgk_strip_diacritics("\u{EB07}", 0xFFFFFFFF), "α" );
+        assert_eq!( hgk_strip_diacritics("α\u{0304}\u{0313}\u{0301}", 0xFFFFFFFF), "α" );
         
         assert_eq!( hgk_convert("\u{EB07}", HgkUnicodeMode::CombiningOnly), "α\u{0304}\u{0313}\u{0301}");
         assert_eq!( hgk_convert("α\u{0304}\u{0313}\u{0301}", HgkUnicodeMode::PrecomposedPUA), "\u{EB07}");
