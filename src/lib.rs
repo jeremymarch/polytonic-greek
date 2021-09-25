@@ -131,7 +131,6 @@ impl<'a> Iterator for GreekLetterHolder<'a> {
     }
 }
 
-/*
 impl<'a> DoubleEndedIterator for GreekLetterHolder<'a> {
     #[inline]
     fn next_back(&mut self) -> Option<HGKLetter> {
@@ -143,7 +142,6 @@ impl<'a> DoubleEndedIterator for GreekLetterHolder<'a> {
         Some(prev.unwrap().unwrap())
     }
 }
-*/
 
 #[inline]
 pub fn new_gkletters(s: &str) -> GreekLetterHolder {
@@ -273,6 +271,88 @@ impl GreekLetterCursor {
             }    
         }
     
+    #[inline]
+    pub fn prev_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<HGKLetter>, GreekLetterError> {
+
+        if self.offset == 0 {
+            unreachable!("should never reach here");
+            //return Ok(None);
+        }
+
+        let mut the_letter = '\u{0000}';
+        let mut diacritics:u32 = 0;
+
+        let mut iter = chunk[..self.offset - chunk_start].chars().rev(); //nfd()
+        let mut ch = iter.next().unwrap();
+        //println!("next boundary: offset: {} {}", self.offset, ch);
+        
+        loop {
+                if the_letter == '\u{0000}' && !hgk_is_combining(ch) {
+                    if ch as u32 >= 0x0370 && ch as u32 <= 0x03FF {
+                        //basic greek conversion
+                        the_letter = GREEK_BASIC[ch as usize - 0x0370].0;
+                        diacritics = GREEK_BASIC[ch as usize - 0x0370].1;
+
+                        if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
+                            the_letter = ch;
+                        }
+                    }
+                    else if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
+                        //extended greek conversion
+                        the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
+                        diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
+                        if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
+                            the_letter = ch;
+                        }
+                    }
+                    else if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
+                        //PUA conversion
+                        the_letter = GREEK_PUA[ch as usize - 0xEAF0].0;
+                        diacritics = GREEK_PUA[ch as usize - 0xEAF0].1;
+                        if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
+                            the_letter = ch;
+                        }
+                    }
+                    else {
+                       the_letter = ch;
+                    }
+                }
+                else if hgk_is_combining(ch) {
+                    match ch {
+                        '\u{0300}' => diacritics |= HGK_GRAVE,
+                        '\u{0301}' => diacritics |= HGK_ACUTE,
+                        '\u{0304}' => diacritics |= HGK_MACRON,
+                        '\u{0306}' => diacritics |= HGK_BREVE,
+                        '\u{0308}' => diacritics |= HGK_DIAERESIS,
+                        '\u{0313}' => diacritics |= HGK_SMOOTH,
+                        '\u{0314}' => diacritics |= HGK_ROUGH,
+                        '\u{0323}' => diacritics |= HGK_UNDERDOT,
+                        '\u{0342}' => diacritics |= HGK_CIRCUMFLEX,
+                        '\u{0345}' => diacritics |= HGK_IOTA_SUBSCRIPT,
+                        _ => {}
+                    }
+                }
+                else {
+                    //self.offset += ch.len_utf8();
+                    //else boundary character, return
+                    return Ok(Some(HGKLetter{letter:the_letter, diacritics}));
+                }
+
+                self.offset -= ch.len_utf8();
+                if let Some(next_ch) = iter.next() {        
+                    ch = next_ch;
+
+                } else if self.offset == 0 {
+                    //at the end
+                    //println!("herehere2: {}", self.offset);
+                    //return Ok(None);
+                    return Ok(Some(HGKLetter{letter:the_letter, diacritics}));
+                }
+                else {
+                    return Ok(None);
+                }
+            }    
+        }
     /*
     pub fn prev_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<HGKLetter>, GreekLetterError> {
         if self.offset == 0 {
@@ -925,6 +1005,12 @@ mod tests {
         assert_eq!(aaa.next().unwrap().letter, 'β');
         assert_eq!(aaa.next().unwrap().letter, 'γ');
         assert_eq!(aaa.next(), None);
+
+        let mut aaa = "άβγ".gkletters();
+        assert_eq!(aaa.next_back().unwrap().letter, 'γ');
+        assert_eq!(aaa.next_back().unwrap().letter, 'β');
+        assert_eq!(aaa.next_back().unwrap().letter, 'α');
+        assert_eq!(aaa.next_back(), None);
 
         let s = "αβγ";
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
