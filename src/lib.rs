@@ -321,6 +321,10 @@ impl GreekLetterCursor {
                     else {
                        the_letter = ch;
                     }
+
+                    //found letter: move offset and return
+                    self.offset -= ch.len_utf8();
+                    return Ok(Some(HGKLetter{letter:the_letter, diacritics}));
                 }
                 else if hgk_is_combining(ch) {
                     match ch {
@@ -337,13 +341,15 @@ impl GreekLetterCursor {
                         _ => {}
                     }
                 }
+                /*
+                is this even reachable??
                 else {
                     //self.offset += ch.len_utf8();
                     //else boundary character, return
                     return Ok(Some(HGKLetter{letter:the_letter, diacritics}));
-                }
-
+                }*/
                 self.offset -= ch.len_utf8();
+
                 if let Some(next_ch) = iter.next() {      
                     ch = next_ch;
 
@@ -1008,11 +1014,17 @@ mod tests {
         assert_eq!(aaa.next_back(), None);
 
 
-        let mut aaa = "ῡ".gkletters();
+        let mut aaa = "\u{1FE1}".gkletters();
         assert_eq!(aaa.next().unwrap(), HGKLetter{letter:'υ', diacritics:HGK_MACRON});
 
-        let mut aaa = "ῡ".gkletters();
+        let mut aaa = "υ\u{0304}".gkletters();
         assert_eq!(aaa.next_back().unwrap(), HGKLetter{letter:'υ', diacritics:HGK_MACRON});
+
+        let mut aaa = "λυ\u{0304}ε".gkletters();
+        assert_eq!(aaa.next_back().unwrap(), HGKLetter{letter:'ε', diacritics:0});
+        assert_eq!(aaa.next_back().unwrap(), HGKLetter{letter:'υ', diacritics:HGK_MACRON});
+        assert_eq!(aaa.next_back().unwrap(), HGKLetter{letter:'λ', diacritics:0});
+        assert_eq!(aaa.next_back(), None);
 
         let s = "αβγ";
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
