@@ -451,7 +451,7 @@ COMBINING_CIRCUMFLEX,
 COMBINING_IOTA_SUBSCRIPT, 
 COMBINING_UNDERDOT
 */
-    fn to_string(&self, unicode_mode:HgkUnicodeMode) -> String {
+    pub fn to_string(&self, unicode_mode:HgkUnicodeMode) -> String {
         let mut s = vec![self.letter];
         if (self.diacritics & HGK_MACRON) == HGK_MACRON {
             s.push('\u{0304}');
