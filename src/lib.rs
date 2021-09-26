@@ -68,6 +68,12 @@ fn get_pua_index(letter:char, diacritics:u32) -> i32 {
     }
 }
 
+pub enum HgkLetterType {
+    HgkLongVowel,
+    HgkShortVowel,
+    HgkConsonant
+}
+
 #[derive(Copy, Clone)]
 pub enum HgkUnicodeMode {
     Precomposed,
@@ -77,8 +83,8 @@ pub enum HgkUnicodeMode {
 
 #[derive(PartialEq, Debug)]
 pub struct HGKLetter {
-    letter: char,
-    diacritics: u32
+    pub letter: char,
+    pub diacritics: u32
 }
 
 pub trait GreekLetters {
@@ -208,7 +214,7 @@ impl GreekLetterCursor {
                     if ch as u32 >= 0x0370 && ch as u32 <= 0x03FF {
                         //basic greek conversion
                         the_letter = GREEK_BASIC[ch as usize - 0x0370].0;
-                        diacritics = GREEK_BASIC[ch as usize - 0x0370].1;
+                        diacritics |= GREEK_BASIC[ch as usize - 0x0370].1;
 
                         if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
                             the_letter = ch;
@@ -217,7 +223,7 @@ impl GreekLetterCursor {
                     else if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
                         //extended greek conversion
                         the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
-                        diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
+                        diacritics |= GREEK_EXTENDED[ch as usize - 0x1F00].1;
                         if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
                             the_letter = ch;
                         }
@@ -225,7 +231,7 @@ impl GreekLetterCursor {
                     else if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
                         //PUA conversion
                         the_letter = GREEK_PUA[ch as usize - 0xEAF0].0;
-                        diacritics = GREEK_PUA[ch as usize - 0xEAF0].1;
+                        diacritics |= GREEK_PUA[ch as usize - 0xEAF0].1;
                         if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
                             the_letter = ch;
                         }
@@ -284,14 +290,13 @@ impl GreekLetterCursor {
 
         let mut iter = chunk[..self.offset - chunk_start].chars().rev(); //nfd()
         let mut ch = iter.next().unwrap();
-        //println!("next boundary: offset: {} {}", self.offset, ch);
         
         loop {
                 if the_letter == '\u{0000}' && !hgk_is_combining(ch) {
                     if ch as u32 >= 0x0370 && ch as u32 <= 0x03FF {
                         //basic greek conversion
                         the_letter = GREEK_BASIC[ch as usize - 0x0370].0;
-                        diacritics = GREEK_BASIC[ch as usize - 0x0370].1;
+                        diacritics |= GREEK_BASIC[ch as usize - 0x0370].1;
 
                         if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
                             the_letter = ch;
@@ -300,7 +305,7 @@ impl GreekLetterCursor {
                     else if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
                         //extended greek conversion
                         the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
-                        diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
+                        diacritics |= GREEK_EXTENDED[ch as usize - 0x1F00].1;
                         if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
                             the_letter = ch;
                         }
@@ -308,7 +313,7 @@ impl GreekLetterCursor {
                     else if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
                         //PUA conversion
                         the_letter = GREEK_PUA[ch as usize - 0xEAF0].0;
-                        diacritics = GREEK_PUA[ch as usize - 0xEAF0].1;
+                        diacritics |= GREEK_PUA[ch as usize - 0xEAF0].1;
                         if the_letter == NOT_ACCENTABLE_CHAR || the_letter == '\u{0000}' {
                             the_letter = ch;
                         }
@@ -339,12 +344,12 @@ impl GreekLetterCursor {
                 }
 
                 self.offset -= ch.len_utf8();
-                if let Some(next_ch) = iter.next() {        
+                if let Some(next_ch) = iter.next() {      
                     ch = next_ch;
 
                 } else if self.offset == 0 {
                     //at the end
-                    //println!("herehere2: {}", self.offset);
+                    //println!("herehere2: {} {}", self.offset, diacritics);
                     //return Ok(None);
                     return Ok(Some(HGKLetter{letter:the_letter, diacritics}));
                 }
@@ -353,41 +358,31 @@ impl GreekLetterCursor {
                 }
             }    
         }
-    /*
-    pub fn prev_boundary(&mut self, chunk: &str, chunk_start: usize) -> Result<Option<HGKLetter>, GreekLetterError> {
-        if self.offset == 0 {
-            return Ok(None);
-        }
-        if self.offset == chunk_start {
-            return Err(GreekLetterError::PrevChunk);
-        }
-        let mut iter = chunk[..self.offset - chunk_start].chars().rev();
-        let mut ch = iter.next().unwrap();
-        loop {
-            if self.offset == chunk_start {
-                return Err(GreekLetterError::PrevChunk);
-            }
 
-            self.offset -= ch.len_utf8();
-
-            
-            if let Some(prev_ch) = iter.next() {
-                ch = prev_ch;
-            } else if self.offset == 0 {
-                self.decide(true);
-            } else {
-                return Err(GreekLetterError::PrevChunk);
-            }
-            
-        }
-    }
-}
-*/
 }
 /************************************************/
 
-
 impl HGKLetter {
+    pub fn letter_type(&self) -> HgkLetterType {
+        if self.letter.is_long() {
+            return HgkLetterType::HgkLongVowel;
+        }
+        else if self.letter.is_long_or_short() {
+            if (self.diacritics & HGK_MACRON) == HGK_MACRON {
+                return HgkLetterType::HgkLongVowel;
+            }
+            else {
+                return HgkLetterType::HgkShortVowel;
+            }
+        }
+        else if self.letter.is_short() {
+            return HgkLetterType::HgkShortVowel;
+        }
+        else {
+            return HgkLetterType::HgkConsonant;
+        }
+    }
+
     fn from_str(l:&str) -> HGKLetter {
         let mut diacritics:u32 = 0;
         let mut the_letter: char = '\u{0000}';
@@ -599,7 +594,7 @@ impl Display for HGKLetter {
     }
 }
 */
-trait HGKIsLong {
+pub trait HGKIsLong {
     fn is_long(&self) -> bool;
 }
 
@@ -609,7 +604,7 @@ impl HGKIsLong for char {
     }
 }
 
-trait HGKIsShort {
+pub trait HGKIsShort {
     fn is_short(&self) -> bool;
 }
 
@@ -619,7 +614,7 @@ impl HGKIsShort for char {
     }
 }
 
-trait HGKIsLongOrShort {
+pub trait HGKIsLongOrShort {
     fn is_long_or_short(&self) -> bool;
 }
 
@@ -629,7 +624,7 @@ impl HGKIsLongOrShort for char {
     }
 }
 
-trait HGKIsGreekVowel {
+pub trait HGKIsGreekVowel {
     fn is_greek_vowel(&self) -> bool;
 }
 
@@ -1011,6 +1006,13 @@ mod tests {
         assert_eq!(aaa.next_back().unwrap().letter, 'β');
         assert_eq!(aaa.next_back().unwrap().letter, 'α');
         assert_eq!(aaa.next_back(), None);
+
+
+        let mut aaa = "ῡ".gkletters();
+        assert_eq!(aaa.next().unwrap(), HGKLetter{letter:'υ', diacritics:HGK_MACRON});
+
+        let mut aaa = "ῡ".gkletters();
+        assert_eq!(aaa.next_back().unwrap(), HGKLetter{letter:'υ', diacritics:HGK_MACRON});
 
         let s = "αβγ";
         let g = s.gkletters().collect::<Vec<HGKLetter>>();
