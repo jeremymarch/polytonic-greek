@@ -507,7 +507,7 @@ COMBINING_UNDERDOT
         }  
     }
 
-    fn toggle_diacritic(&mut self, d:u32, on_only:bool) {
+    pub fn toggle_diacritic(&mut self, d:u32, on_only:bool) {
         if !self.is_legal(d) {
             return;
         }
