@@ -647,6 +647,19 @@ pub fn hgk_strip_diacritics(l:&str, turnoff_diacritics:u32) -> String {
     l.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:a.diacritics & !turnoff_diacritics}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>()
 }
 
+pub fn hgk_has_diacritics(l:&str, check_diacritics:u32) -> bool {
+    //let b = l.gkletters();
+    //println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
+    
+    //turn off all other bits, see if it equals 0 or not
+    for a in l.gkletters() { //.map(|a| HGKLetter{letter:a.letter, diacritics:a.diacritics & !turnoff_diacritics}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>()
+        if (a.diacritics & check_diacritics) != 0 {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn hgk_convert(l:&str, mode:HgkUnicodeMode) -> String {
     //let b = l.gkletters();
     //println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
@@ -1156,6 +1169,15 @@ mod tests {
         assert_eq!( hgk_strip_diacritics("ἄβ", 0xFFFFFFFF), "αβ" );
         assert_eq!( hgk_strip_diacritics("\u{EB07}", 0xFFFFFFFF), "α" );
         assert_eq!( hgk_strip_diacritics("α\u{0304}\u{0313}\u{0301}", 0xFFFFFFFF), "α" );
+
+
+        assert_eq!( hgk_has_diacritics("άῶ", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
+        assert_eq!( hgk_has_diacritics("αῶ", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
+        assert_eq!( hgk_has_diacritics("άω", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
+        assert_eq!( hgk_has_diacritics("ἀω", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), false);
+        assert_eq!( hgk_has_diacritics("ἄω", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
+        assert_eq!( hgk_has_diacritics("ἀώ", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
+        assert_eq!( hgk_has_diacritics("αω", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), false);
         
         assert_eq!( hgk_convert("\u{EB07}", HgkUnicodeMode::CombiningOnly), "α\u{0304}\u{0313}\u{0301}");
         assert_eq!( hgk_convert("α\u{0304}\u{0313}\u{0301}", HgkUnicodeMode::PrecomposedPUA), "\u{EB07}");

@@ -2,7 +2,7 @@
 name = "rustunicodetests"
 version = "0.1.0"
 authors = ["jeremymarch <jmarch@gradcenter.cuny.edu>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,11 +20,11 @@ edition = "2018"
 doctest = false # don't run Doc-tests for now
 
 [dependencies]
-unicode-normalization = { version = "0.1.17", default-features = false }
+unicode-normalization = { version = "0.1.19", default-features = false }
 
 [dev-dependencies]
-csv = "1.1"
-hex = "0.3.0"
+csv = "1.1.6"
+hex = "0.4.3"
 
 # [dependencies.tinyvec]
 # version = "1"
