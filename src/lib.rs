@@ -394,30 +394,30 @@ impl HGKLetter {
         let mut the_letter: char = '\u{0000}';
         for (i, ch) in l.chars().enumerate() {
             if i == 0 {
-                assert!( !hgk_is_combining(ch) ); //"First char of letter is a combining mark.");
+                assert!( !hgk_is_combining(ch) ); //"First char of letter is a combining mark."); just ignore it?
 
-                    if ch as u32 >= 0x0370 && ch as u32 <= 0x03FF {
-                        //basic greek conversion
-                        the_letter = GREEK_BASIC[ch as usize - 0x0370].0;
-                        diacritics = GREEK_BASIC[ch as usize - 0x0370].1;
+                if ch as u32 >= 0x0370 && ch as u32 <= 0x03FF {
+                    //basic greek conversion
+                    the_letter = GREEK_BASIC[ch as usize - 0x0370].0;
+                    diacritics = GREEK_BASIC[ch as usize - 0x0370].1;
 
-                        if the_letter == NOT_ACCENTABLE_CHAR {
-                            the_letter = ch;
-                        }
+                    if the_letter == NOT_ACCENTABLE_CHAR {
+                        the_letter = ch;
                     }
-                    else if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
-                        //extended greek conversion
-                        the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
-                        diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
-                    }
-                    else if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
-                        //PUA conversion
-                        the_letter = GREEK_PUA[ch as usize - 0xEAF0].0;
-                        diacritics = GREEK_PUA[ch as usize - 0xEAF0].1;
-                    }
-                    else {
-                       the_letter = ch;
-                    }                
+                }
+                else if ch as u32 >= 0x1F00 && ch as u32 <= 0x1FFF {
+                    //extended greek conversion
+                    the_letter = GREEK_EXTENDED[ch as usize - 0x1F00].0;
+                    diacritics = GREEK_EXTENDED[ch as usize - 0x1F00].1;
+                }
+                else if ch as u32 >= 0xEAF0 && ch as u32 <= 0xEB8A {
+                    //PUA conversion
+                    the_letter = GREEK_PUA[ch as usize - 0xEAF0].0;
+                    diacritics = GREEK_PUA[ch as usize - 0xEAF0].1;
+                }
+                else {
+                    the_letter = ch;
+                }                
             }
             else {
                 match ch {
@@ -644,9 +644,16 @@ impl HGKIsGreekVowel for char {
 pub fn hgk_strip_diacritics(l:&str, turnoff_diacritics:u32) -> String {
     //let b = l.gkletters();
     //println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
-    l.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:a.diacritics & !turnoff_diacritics}.to_string(HgkUnicodeMode::PrecomposedPUA)).collect::<String>()
+    l.gkletters().map(|a| HGKLetter{letter:a.letter, diacritics:a.diacritics & !turnoff_diacritics}.to_string(HgkUnicodeMode::Precomposed)).collect::<String>()
 }
 
+pub fn hgk_strip_diacritics_and_replace_circumflex_with_macron(l:&str, turnoff_diacritics:u32) -> String {
+    //let b = l.gkletters();
+    //println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
+    l.gkletters().map(|a| {let d = if (a.diacritics & HGK_CIRCUMFLEX ) == HGK_CIRCUMFLEX && (a.letter == 'ι' ) { a.diacritics | HGK_MACRON } else {a.diacritics}; HGKLetter{letter:a.letter, diacritics: d & !turnoff_diacritics}.to_string(HgkUnicodeMode::Precomposed)}).collect::<String>()
+}
+
+//returns true if one or more of the bits in check_diacritics is/are set
 pub fn hgk_has_diacritics(l:&str, check_diacritics:u32) -> bool {
     //let b = l.gkletters();
     //println!("num: {}", b.collect::<Vec<HGKLetter>>().len() );
