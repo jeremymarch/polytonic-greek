@@ -673,6 +673,30 @@ pub fn hgk_convert(l:&str, mode:HgkUnicodeMode) -> String {
     l.gkletters().map(|a| a.to_string(mode)).collect::<String>()
 }
 
+//toggle diacritic on the last char of the string, then return full string
+pub fn hgk_toggle_diacritic_str_end(s:&str, d:u32, on_only:bool, mode:HgkUnicodeMode) -> String {
+    let slen = s.chars().count(); //count chars, not bytes
+    if slen == 0 {
+        return s.to_string();
+    }
+    let mut len = 1;
+    for a in s.chars().rev() {
+        if !hgk_is_combining(a) {
+            break;
+        }
+        len += 1;
+    }
+
+    len = slen - len;
+    let start:String = s.chars().take(len).collect();
+    let end:String = s.chars().skip(len).collect();
+
+    //println!("slen {}, len {}", slen, len);
+    let new = hgk_toggle_diacritic_str(&end, d, on_only, mode);
+    //println!("{} - {} : {}", start, end, new);
+    format!("{}{}", start, new)
+}
+
 pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode) -> String {
     let mut letter = HGKLetter::from_str(l);
     letter.toggle_diacritic(d, on_only);
