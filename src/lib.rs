@@ -711,6 +711,38 @@ pub fn hgk_compare_sqlite(s1: &str, s2: &str) -> Ordering {
     }
 }
 
+pub fn hgk_compare_multiple_forms(str1:&str, str2:&str) -> bool {
+    let is_correct;
+    let s1 = str1.split(",").collect::<Vec<&str>>();
+    let s2 = str2.split(",").collect::<Vec<&str>>();
+    if s1.len() != s2.len() {
+        is_correct = false;
+    }
+    else {
+        let mut all_found = true;
+        for a in s1 {
+            let mut found = false;
+            for b in &s2 {
+                if hgk_compare(a.trim(), b.trim(), 0) == 0 {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                all_found = false;
+                break;
+            }
+        }
+        if all_found {
+            is_correct = true;
+        }
+        else {
+            is_correct = false;
+        }
+    }
+    is_correct
+}
+
 //set compare_type to 0xFFFF for diacritic insensitive
 pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
     let mut a1 = a.gkletters();
@@ -899,6 +931,16 @@ mod tests {
 
     #[test]
     fn test_compare() {
+
+        assert_eq!(hgk_compare_multiple_forms("φέρει , φέρῃ ", "  φέρῃ   ,   φέρει"), true);
+        assert_eq!(hgk_compare_multiple_forms(" φέρει , φέρῃ ", "  φέρει   ,  φέρῃ "), true);
+        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,φέρει"), true);
+        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,"), false);
+        assert_eq!(hgk_compare_multiple_forms("φέρει,", "φέρῃ,φέρει"), false);
+        assert_eq!(hgk_compare_multiple_forms("φέρει", "φέρῃ,φέρει"), false);
+        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,"), false);
+        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ"), false);
+        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρει"), false);
 
         assert_eq!( hgk_compare("α", "α", 0), 0);
         assert_eq!( hgk_compare("α", "Α", 0), 0);
