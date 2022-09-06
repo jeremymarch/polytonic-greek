@@ -81,7 +81,7 @@ pub enum HgkUnicodeMode {
     PrecomposedPUA
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug)]
 pub struct HGKLetter {
     pub letter: char,
     pub diacritics: u32
@@ -371,21 +371,21 @@ impl GreekLetterCursor {
 impl HGKLetter {
     pub fn letter_type(&self) -> HgkLetterType {
         if self.letter.is_long() {
-            return HgkLetterType::HgkLongVowel;
+            HgkLetterType::HgkLongVowel
         }
         else if self.letter.is_long_or_short() {
             if (self.diacritics & HGK_MACRON) == HGK_MACRON {
-                return HgkLetterType::HgkLongVowel;
+                HgkLetterType::HgkLongVowel
             }
             else {
-                return HgkLetterType::HgkShortVowel;
+                HgkLetterType::HgkShortVowel
             }
         }
         else if self.letter.is_short() {
-            return HgkLetterType::HgkShortVowel;
+            HgkLetterType::HgkShortVowel
         }
         else {
-            return HgkLetterType::HgkConsonant;
+            HgkLetterType::HgkConsonant
         }
     }
 
@@ -713,8 +713,8 @@ pub fn hgk_compare_sqlite(s1: &str, s2: &str) -> Ordering {
 
 pub fn hgk_compare_multiple_forms(str1:&str, str2:&str) -> bool {
     let is_correct;
-    let s1 = str1.split(",").collect::<Vec<&str>>();
-    let s2 = str2.split(",").collect::<Vec<&str>>();
+    let s1 = str1.split(',').collect::<Vec<&str>>();
+    let s2 = str2.split(',').collect::<Vec<&str>>();
     if s1.len() != s2.len() {
         is_correct = false;
     }
