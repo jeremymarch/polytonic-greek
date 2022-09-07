@@ -1244,13 +1244,13 @@ mod tests {
         assert_eq!( hgk_strip_diacritics("α\u{0304}\u{0313}\u{0301}", 0xFFFFFFFF), "α" );
 
 
-        assert_eq!( hgk_has_diacritics("άῶ", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
-        assert_eq!( hgk_has_diacritics("αῶ", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
-        assert_eq!( hgk_has_diacritics("άω", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
-        assert_eq!( hgk_has_diacritics("ἀω", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), false);
-        assert_eq!( hgk_has_diacritics("ἄω", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
-        assert_eq!( hgk_has_diacritics("ἀώ", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), true);
-        assert_eq!( hgk_has_diacritics("αω", (HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE)), false);
+        assert_eq!( hgk_has_diacritics("άῶ", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
+        assert_eq!( hgk_has_diacritics("αῶ", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
+        assert_eq!( hgk_has_diacritics("άω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
+        assert_eq!( hgk_has_diacritics("ἀω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), false);
+        assert_eq!( hgk_has_diacritics("ἄω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
+        assert_eq!( hgk_has_diacritics("ἀώ", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
+        assert_eq!( hgk_has_diacritics("αω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), false);
         
         assert_eq!( hgk_convert("\u{EB07}", HgkUnicodeMode::CombiningOnly), "α\u{0304}\u{0313}\u{0301}");
         assert_eq!( hgk_convert("α\u{0304}\u{0313}\u{0301}", HgkUnicodeMode::PrecomposedPUA), "\u{EB07}");
