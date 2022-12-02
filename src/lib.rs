@@ -13,8 +13,7 @@ use core::cmp;
 //use tinyvec::TinyVec;
 
 //use core::fmt::Display;
-extern crate unicode_normalization;
-use unicode_normalization::UnicodeNormalization;
+use unicode_normalization::UnicodeNormalization; //only two uses of nfc()
 
 pub use crate::tables::*;
 mod tables;
@@ -66,6 +65,65 @@ fn get_pua_index(letter:char, diacritics:u32) -> i32 {
         'υ' => i + 32,
         _ => -1,
     }
+}
+
+fn get_precomposed(letter:char, diacritics_a:u32) -> char {
+    let letter = match letter {
+        'α' => 0,
+        'ε' => 1,
+        'η' => 2,
+        'ι' => 3,
+        'ο' => 4,
+        'υ' => 5,
+        'ω' => 6,
+        'Α' => 7,
+        'Ε' => 8,
+        'Η' => 9,
+        'Ι' => 10,
+        'Ο' => 11,
+        'Υ' => 12,
+        'Ω' => 13,
+        _ => return letter
+    };
+    let p = diacritics_a & !HGK_UNDERDOT;
+    let diacritics = if p == HGK_SMOOTH | HGK_ACUTE | HGK_IOTA_SUBSCRIPT { 18 }
+        else if p == HGK_ROUGH | HGK_ACUTE | HGK_IOTA_SUBSCRIPT { 19 }
+        else if p == HGK_SMOOTH | HGK_GRAVE | HGK_IOTA_SUBSCRIPT { 21}
+        else if p == HGK_ROUGH | HGK_GRAVE | HGK_IOTA_SUBSCRIPT { 22}
+        else if p == HGK_SMOOTH | HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT { 24}
+        else if p == HGK_ROUGH | HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT { 25}
+
+        else if p == HGK_SMOOTH | HGK_CIRCUMFLEX { 12}
+        else if p == HGK_ROUGH | HGK_CIRCUMFLEX { 13}
+        else if p == HGK_ACUTE | HGK_IOTA_SUBSCRIPT { 17}
+        else if p == HGK_GRAVE | HGK_IOTA_SUBSCRIPT { 20}
+        else if p == HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT { 23}
+        else if p == HGK_SMOOTH | HGK_IOTA_SUBSCRIPT { 15}
+        else if p == HGK_ROUGH | HGK_IOTA_SUBSCRIPT { 16}
+        else if p == HGK_ACUTE | HGK_DIAERESIS { 2}
+        else if p == HGK_SMOOTH | HGK_ACUTE { 6}
+        else if p == HGK_ROUGH | HGK_ACUTE { 7}
+        else if p == HGK_SMOOTH | HGK_GRAVE { 9}
+        else if p == HGK_ROUGH | HGK_GRAVE { 10}
+        else if p == HGK_DIAERESIS | HGK_GRAVE { 28}
+        else if p == HGK_DIAERESIS | HGK_CIRCUMFLEX { 29}
+
+        else if p == HGK_ACUTE { 1}
+        else if p == HGK_SMOOTH { 3}
+        else if p == HGK_ROUGH { 4}
+        /* HGK_ACUTE => 5, use tonos rather than oxia */
+        else if p == HGK_GRAVE { 8}
+        else if p == HGK_CIRCUMFLEX { 11}
+        else if p == HGK_IOTA_SUBSCRIPT { 14}
+        else if p == HGK_DIAERESIS { 26}
+        /* HGK_DIAERESIS | HGK_ACUTE => 27, */
+        else if p == HGK_MACRON { 30}
+        else if p == HGK_BREVE { 31}
+        else if p == HGK_NO_DIACRITICS { 0 }
+        else { return '\u{0000}' };
+
+    //println!("diacritics: {:?} {:?}", letter, diacritics);
+    GREEK_PRECOMPOSED[letter][diacritics]
 }
 
 pub enum HgkLetterType {
@@ -438,6 +496,7 @@ impl HGKLetter {
         
         HGKLetter { letter: the_letter, diacritics }
     }
+
 /*
 order:
 COMBINING_MACRON, 
@@ -497,13 +556,67 @@ COMBINING_UNDERDOT
                     if (self.diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
                         s.push('\u{0323}');
                     }
-                    s.into_iter().collect::<String>() 
+                    s.into_iter().collect::<String>()
                 }
                 else {
-                    s.into_iter().nfc().collect::<String>() 
+                    //s.into_iter().nfc().collect::<String>()
+                    s.clear();
+                    s.push( get_precomposed(self.letter, self.diacritics) );
+                    if self.letter == 'ρ' && (self.diacritics & HGK_ROUGH) == HGK_ROUGH { 
+                        s.clear();
+                        s.push('ῥ');
+                    }
+                    else if self.letter == 'ρ' && (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
+                        s.clear();
+                        s.push('ῤ');
+                    }
+                    else if self.letter == 'Ρ' && (self.diacritics & HGK_ROUGH) == HGK_ROUGH { 
+                        s.clear();
+                        s.push('Ῥ');
+                    }
+                    else if self.letter == 'Ρ' && (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
+                        s.clear();
+                        s.push('Ρ');
+                        s.push('\u{0313}');
+                    }
+                    if (self.diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
+                        s.push('\u{0323}');
+                    }
+                    s.into_iter().collect::<String>() 
                 }
             },
-            _ => s.into_iter().nfc().collect::<String>()
+            _ => {
+                //s.into_iter().nfc().collect::<String>() 
+                if (self.diacritics & HGK_MACRON) != HGK_MACRON {
+                    s.clear();
+                    s.push( get_precomposed(self.letter, self.diacritics) );
+                    if self.letter == 'ρ' && (self.diacritics & HGK_ROUGH) == HGK_ROUGH { 
+                        s.clear();
+                        s.push('ῥ');
+                    }
+                    else if self.letter == 'ρ' && (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
+                        s.clear();
+                        s.push('ῤ');
+                    }
+                    else if self.letter == 'Ρ' && (self.diacritics & HGK_ROUGH) == HGK_ROUGH { 
+                        s.clear();
+                        s.push('Ῥ');
+                    }
+                    else if self.letter == 'Ρ' && (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
+                        s.clear();
+                        s.push('Ρ');
+                        s.push('\u{0313}');
+                    }
+                    if (self.diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
+                        s.push('\u{0323}');
+                    }
+                }
+                else {
+                    s.remove(0);
+                    s[0] = get_precomposed(self.letter, HGK_MACRON);
+                }
+                s.into_iter().collect::<String>()  
+            }
         }  
     }
 
@@ -820,19 +933,7 @@ pub fn hgk_compare(a:&str, b:&str, compare_type:u32) -> i32 {
 
 #[inline]
 pub fn hgk_is_combining(c:char) -> bool {
-    match c {
-        '\u{0300}' => true,
-        '\u{0301}' => true,
-        '\u{0304}' => true,
-        '\u{0306}' => true,
-        '\u{0308}' => true,
-        '\u{0313}' => true,
-        '\u{0314}' => true,
-        '\u{0323}' => true,
-        '\u{0342}' => true,
-        '\u{0345}' => true,
-        _ => { false }
-    }
+    matches!(c, '\u{0300}' | '\u{0301}' | '\u{0304}' | '\u{0306}' | '\u{0308}' | '\u{0313}' | '\u{0314}' | '\u{0323}' | '\u{0342}' | '\u{0345}')
 }
 
 pub fn hgk_transliterate(input:usize) -> char {
