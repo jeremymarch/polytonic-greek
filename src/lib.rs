@@ -1,20 +1,21 @@
-//#![no_std]
+#![no_std]
 #![deny(unsafe_code)]
 
 #[macro_use]
 extern crate alloc;
 use alloc::string::String;
-//use alloc::string::ToString;
-use std::cmp::Ordering;
+use alloc::string::ToString;
+use alloc::vec::Vec;
 
 use core::cmp;
+use core::cmp::Ordering;
 
 //extern crate tinyvec;
 //use tinyvec::TinyVec;
 
 //use core::fmt::Display;
 #[cfg(feature = "unicode-normalization")]
-use unicode_normalization::UnicodeNormalization; //only two uses of nfc()
+use unicode_normalization::UnicodeNormalization;
 
 pub use crate::tables::*;
 mod tables;
