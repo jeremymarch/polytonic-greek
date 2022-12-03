@@ -167,8 +167,7 @@ fn get_composing_chars(letter: char, diacritics: u32) -> Vec<char> {
 //cargo test -- --nocapture  
 #[cfg(feature = "unicode-normalization")]
 fn get_precomposed_string(letter: char, diacritics: u32) -> String {
-    let s = get_composing_chars(letter, diacritics);
-    s.into_iter().nfc().collect::<String>()
+    get_composing_chars(letter, diacritics).into_iter().nfc().collect::<String>()
 }
 
 //cargo test --no-default-features -- --nocapture
@@ -196,11 +195,20 @@ fn get_precomposed_string(letter: char, diacritics: u32) -> String {
     if (diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
         s.push('\u{0323}');
     }
-    if s[0] == '\u{0000}' && (diacritics & HGK_MACRON) == HGK_MACRON {
-        s.clear();
-        s = get_composing_chars(letter, diacritics);
-        s.remove(0);
-        s[0] = get_precomposed(letter, HGK_MACRON); //this replaces the combining macron
+    if s[0] == '\u{0000}' {
+        if (diacritics & HGK_MACRON) == HGK_MACRON {
+            s.clear();
+            s = get_composing_chars(letter, diacritics);
+            s.remove(0);
+            s[0] = get_precomposed(letter, HGK_MACRON); //this replaces the combining macron
+        }
+        else {
+            s.clear();
+            s = get_composing_chars(letter, diacritics);
+        }
+    }
+    if s[0] == '\u{0000}' {
+        return "".to_string();
     }
     s.into_iter().collect::<String>()
 }
