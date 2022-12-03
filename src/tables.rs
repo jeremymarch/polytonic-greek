@@ -724,6 +724,7 @@ pub(crate) const GREEK_EXTENDED: &[(char, u32)] = &[
     /* 1FFF */ ( '\u{0000}', HGK_NO_DIACRITICS )
 ];
 
+#[cfg(not(feature = "unicode-normalization"))]
 pub(crate) const GREEK_PRECOMPOSED: [[char; 32]; 14] = [
     /*                    base,     tonos, dia+tonos,     psili,     dasia,      oxia,  psi+oxia, dasi+oxia,     varia, psi+varia, das+varia,    perisp,  psi+peri,  das+peri,       upo,   psi+upo,   das+upo,    ox+upo,psi+ox+upo,das+ox+upo, var+upo,psi+var+upo,das+var+upo,  per+upo,psi+per+upo,das+per+upo,dialytika,    dia+ox,   dia+var,  dia+peri,    macron,    vrachy */
     /* alpha    */  ['\u{03B1}','\u{03AC}','\u{0000}','\u{1F00}','\u{1F01}','\u{1F71}','\u{1F04}','\u{1F05}','\u{1F70}','\u{1F02}','\u{1F03}','\u{1FB6}','\u{1F06}','\u{1F07}','\u{1FB3}','\u{1F80}','\u{1F81}','\u{1FB4}','\u{1F84}','\u{1F85}','\u{1FB2}','\u{1F82}','\u{1F83}','\u{1FB7}','\u{1F86}','\u{1F87}','\u{0000}','\u{0000}','\u{0000}','\u{0000}','\u{1FB1}','\u{1FB0}'],

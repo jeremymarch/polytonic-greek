@@ -13,6 +13,7 @@ use core::cmp;
 //use tinyvec::TinyVec;
 
 //use core::fmt::Display;
+#[cfg(feature = "unicode-normalization")]
 use unicode_normalization::UnicodeNormalization; //only two uses of nfc()
 
 pub use crate::tables::*;
@@ -67,6 +68,7 @@ fn get_pua_index(letter:char, diacritics:u32) -> i32 {
     }
 }
 
+#[cfg(not(feature = "unicode-normalization"))]
 fn get_precomposed(letter:char, diacritics_a:u32) -> char {
     let letter = match letter {
         'α' => 0,
@@ -88,43 +90,139 @@ fn get_precomposed(letter:char, diacritics_a:u32) -> char {
     let p = diacritics_a & !HGK_UNDERDOT;
     let diacritics = if p == HGK_SMOOTH | HGK_ACUTE | HGK_IOTA_SUBSCRIPT { 18 }
         else if p == HGK_ROUGH | HGK_ACUTE | HGK_IOTA_SUBSCRIPT { 19 }
-        else if p == HGK_SMOOTH | HGK_GRAVE | HGK_IOTA_SUBSCRIPT { 21}
-        else if p == HGK_ROUGH | HGK_GRAVE | HGK_IOTA_SUBSCRIPT { 22}
-        else if p == HGK_SMOOTH | HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT { 24}
-        else if p == HGK_ROUGH | HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT { 25}
+        else if p == HGK_SMOOTH | HGK_GRAVE | HGK_IOTA_SUBSCRIPT { 21 }
+        else if p == HGK_ROUGH | HGK_GRAVE | HGK_IOTA_SUBSCRIPT { 22 }
+        else if p == HGK_SMOOTH | HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT { 24 }
+        else if p == HGK_ROUGH | HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT { 25 }
 
-        else if p == HGK_SMOOTH | HGK_CIRCUMFLEX { 12}
-        else if p == HGK_ROUGH | HGK_CIRCUMFLEX { 13}
-        else if p == HGK_ACUTE | HGK_IOTA_SUBSCRIPT { 17}
-        else if p == HGK_GRAVE | HGK_IOTA_SUBSCRIPT { 20}
-        else if p == HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT { 23}
-        else if p == HGK_SMOOTH | HGK_IOTA_SUBSCRIPT { 15}
-        else if p == HGK_ROUGH | HGK_IOTA_SUBSCRIPT { 16}
-        else if p == HGK_ACUTE | HGK_DIAERESIS { 2}
-        else if p == HGK_SMOOTH | HGK_ACUTE { 6}
-        else if p == HGK_ROUGH | HGK_ACUTE { 7}
-        else if p == HGK_SMOOTH | HGK_GRAVE { 9}
-        else if p == HGK_ROUGH | HGK_GRAVE { 10}
-        else if p == HGK_DIAERESIS | HGK_GRAVE { 28}
-        else if p == HGK_DIAERESIS | HGK_CIRCUMFLEX { 29}
+        else if p == HGK_SMOOTH | HGK_CIRCUMFLEX { 12 }
+        else if p == HGK_ROUGH | HGK_CIRCUMFLEX { 13 }
+        else if p == HGK_ACUTE | HGK_IOTA_SUBSCRIPT { 17 }
+        else if p == HGK_GRAVE | HGK_IOTA_SUBSCRIPT { 20 }
+        else if p == HGK_CIRCUMFLEX | HGK_IOTA_SUBSCRIPT { 23 }
+        else if p == HGK_SMOOTH | HGK_IOTA_SUBSCRIPT { 15 }
+        else if p == HGK_ROUGH | HGK_IOTA_SUBSCRIPT { 16 }
+        else if p == HGK_ACUTE | HGK_DIAERESIS { 2 }
+        else if p == HGK_SMOOTH | HGK_ACUTE { 6 }
+        else if p == HGK_ROUGH | HGK_ACUTE { 7 }
+        else if p == HGK_SMOOTH | HGK_GRAVE { 9 }
+        else if p == HGK_ROUGH | HGK_GRAVE { 10 }
+        else if p == HGK_DIAERESIS | HGK_GRAVE { 28 }
+        else if p == HGK_DIAERESIS | HGK_CIRCUMFLEX { 29 }
 
-        else if p == HGK_ACUTE { 1}
-        else if p == HGK_SMOOTH { 3}
-        else if p == HGK_ROUGH { 4}
+        else if p == HGK_ACUTE { 1 }
+        else if p == HGK_SMOOTH { 3 }
+        else if p == HGK_ROUGH { 4 }
         /* HGK_ACUTE => 5, use tonos rather than oxia */
-        else if p == HGK_GRAVE { 8}
-        else if p == HGK_CIRCUMFLEX { 11}
-        else if p == HGK_IOTA_SUBSCRIPT { 14}
-        else if p == HGK_DIAERESIS { 26}
+        else if p == HGK_GRAVE { 8 }
+        else if p == HGK_CIRCUMFLEX { 11 }
+        else if p == HGK_IOTA_SUBSCRIPT { 14 }
+        else if p == HGK_DIAERESIS { 26 }
         /* HGK_DIAERESIS | HGK_ACUTE => 27, */
-        else if p == HGK_MACRON { 30}
-        else if p == HGK_BREVE { 31}
+        else if p == HGK_MACRON { 30 }
+        else if p == HGK_BREVE { 31 }
         else if p == HGK_NO_DIACRITICS { 0 }
         else { return '\u{0000}' };
 
     //println!("diacritics: {:?} {:?}", letter, diacritics);
     GREEK_PRECOMPOSED[letter][diacritics]
 }
+
+fn get_composing_chars(letter: char, diacritics: u32) -> Vec<char> {
+    let mut s = vec![letter];
+    if (diacritics & HGK_MACRON) == HGK_MACRON {
+        s.push('\u{0304}');
+    }
+    if (diacritics & HGK_BREVE) == HGK_BREVE {
+        s.push('\u{0306}');
+    }
+    if (diacritics & HGK_DIAERESIS) == HGK_DIAERESIS {
+        s.push('\u{0308}');
+    }
+    if (diacritics & HGK_ROUGH) == HGK_ROUGH {
+        s.push('\u{0314}');
+    }
+    if (diacritics & HGK_SMOOTH) == HGK_SMOOTH {
+        s.push('\u{0313}');
+    }    
+    if (diacritics & HGK_ACUTE) == HGK_ACUTE {
+        s.push('\u{0301}');
+    }
+    if (diacritics & HGK_GRAVE) == HGK_GRAVE {
+        s.push('\u{0300}');
+    }
+    if (diacritics & HGK_CIRCUMFLEX) == HGK_CIRCUMFLEX {
+        s.push('\u{0342}');
+    }
+    if (diacritics & HGK_IOTA_SUBSCRIPT) == HGK_IOTA_SUBSCRIPT {
+        s.push('\u{0345}');
+    }
+    if (diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
+        s.push('\u{0323}');
+    }
+    s
+}
+
+//cargo test -- --nocapture  
+#[cfg(feature = "unicode-normalization")]
+fn get_precomposed_string(letter: char, diacritics: u32) -> String {
+    let s = get_composing_chars(letter, diacritics);
+    s.into_iter().nfc().collect::<String>()
+}
+
+//cargo test --no-default-features -- --nocapture
+#[cfg(not(feature = "unicode-normalization"))]
+fn get_precomposed_string(letter: char, diacritics: u32) -> String {
+    let mut s = vec![];
+    s.push(get_precomposed(letter, diacritics) );
+    if letter == 'ρ' && (diacritics & HGK_ROUGH) == HGK_ROUGH { 
+        s.clear();
+        s.push('ῥ');
+    }
+    else if letter == 'ρ' && (diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
+        s.clear();
+        s.push('ῤ');
+    }
+    else if letter == 'Ρ' && (diacritics & HGK_ROUGH) == HGK_ROUGH { 
+        s.clear();
+        s.push('Ῥ');
+    }
+    else if letter == 'Ρ' && (diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
+        s.clear();
+        s.push('Ρ');
+        s.push('\u{0313}');
+    }
+    if (diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
+        s.push('\u{0323}');
+    }
+    if s[0] == '\u{0000}' && (diacritics & HGK_MACRON) == HGK_MACRON {
+        s.clear();
+        s = get_composing_chars(letter, diacritics);
+        s.remove(0);
+        s[0] = get_precomposed(letter, HGK_MACRON); //this replaces the combining macron
+    }
+    s.into_iter().collect::<String>()
+}
+
+fn get_pua_string(letter:char, diacritics: u32) -> String {
+    let mut s = vec![];
+    let idx = get_pua_index(letter, diacritics);
+    if (0..=GREEK_LOWER_PUA.len() as i32 - 1 ).contains(&idx) {
+        s.push( GREEK_LOWER_PUA[idx as usize] );
+
+        if (diacritics & HGK_IOTA_SUBSCRIPT) == HGK_IOTA_SUBSCRIPT {
+            s.push('\u{0345}');
+        }
+        if (diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
+            s.push('\u{0323}');
+        }
+        s.into_iter().collect::<String>()
+    }
+    else {
+        get_precomposed_string(letter, diacritics)
+    }
+}
+
 
 pub enum HgkLetterType {
     HgkLongVowel,
@@ -511,112 +609,13 @@ COMBINING_IOTA_SUBSCRIPT,
 COMBINING_UNDERDOT
 */
     pub fn to_string(&self, unicode_mode:HgkUnicodeMode) -> String {
-        let mut s = vec![self.letter];
-        if (self.diacritics & HGK_MACRON) == HGK_MACRON {
-            s.push('\u{0304}');
-        }
-        if (self.diacritics & HGK_BREVE) == HGK_BREVE {
-            s.push('\u{0306}');
-        }
-        if (self.diacritics & HGK_DIAERESIS) == HGK_DIAERESIS {
-            s.push('\u{0308}');
-        }
-        if (self.diacritics & HGK_ROUGH) == HGK_ROUGH {
-            s.push('\u{0314}');
-        }
-        if (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH {
-            s.push('\u{0313}');
-        }    
-        if (self.diacritics & HGK_ACUTE) == HGK_ACUTE {
-            s.push('\u{0301}');
-        }
-        if (self.diacritics & HGK_GRAVE) == HGK_GRAVE {
-            s.push('\u{0300}');
-        }
-        if (self.diacritics & HGK_CIRCUMFLEX) == HGK_CIRCUMFLEX {
-            s.push('\u{0342}');
-        }
-        if (self.diacritics & HGK_IOTA_SUBSCRIPT) == HGK_IOTA_SUBSCRIPT {
-            s.push('\u{0345}');
-        }
-        if (self.diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
-            s.push('\u{0323}');
-        }
         match unicode_mode {
-            HgkUnicodeMode::CombiningOnly => s.into_iter().collect::<String>(),
-            HgkUnicodeMode::PrecomposedPUA => {
-                let idx = get_pua_index(self.letter, self.diacritics);
-                if (0..=GREEK_LOWER_PUA.len() as i32 - 1 ).contains(&idx) {
-                    s.clear();
-                    s.push( GREEK_LOWER_PUA[idx as usize] );
-
-                    if (self.diacritics & HGK_IOTA_SUBSCRIPT) == HGK_IOTA_SUBSCRIPT {
-                        s.push('\u{0345}');
-                    }
-                    if (self.diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
-                        s.push('\u{0323}');
-                    }
-                    s.into_iter().collect::<String>()
-                }
-                else {
-                    //s.into_iter().nfc().collect::<String>()
-                    s.clear();
-                    s.push( get_precomposed(self.letter, self.diacritics) );
-                    if self.letter == 'ρ' && (self.diacritics & HGK_ROUGH) == HGK_ROUGH { 
-                        s.clear();
-                        s.push('ῥ');
-                    }
-                    else if self.letter == 'ρ' && (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
-                        s.clear();
-                        s.push('ῤ');
-                    }
-                    else if self.letter == 'Ρ' && (self.diacritics & HGK_ROUGH) == HGK_ROUGH { 
-                        s.clear();
-                        s.push('Ῥ');
-                    }
-                    else if self.letter == 'Ρ' && (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
-                        s.clear();
-                        s.push('Ρ');
-                        s.push('\u{0313}');
-                    }
-                    if (self.diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
-                        s.push('\u{0323}');
-                    }
-                    s.into_iter().collect::<String>() 
-                }
-            },
-            _ => {
-                //s.into_iter().nfc().collect::<String>() 
-                if (self.diacritics & HGK_MACRON) != HGK_MACRON {
-                    s.clear();
-                    s.push( get_precomposed(self.letter, self.diacritics) );
-                    if self.letter == 'ρ' && (self.diacritics & HGK_ROUGH) == HGK_ROUGH { 
-                        s.clear();
-                        s.push('ῥ');
-                    }
-                    else if self.letter == 'ρ' && (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
-                        s.clear();
-                        s.push('ῤ');
-                    }
-                    else if self.letter == 'Ρ' && (self.diacritics & HGK_ROUGH) == HGK_ROUGH { 
-                        s.clear();
-                        s.push('Ῥ');
-                    }
-                    else if self.letter == 'Ρ' && (self.diacritics & HGK_SMOOTH) == HGK_SMOOTH { 
-                        s.clear();
-                        s.push('Ρ');
-                        s.push('\u{0313}');
-                    }
-                    if (self.diacritics & HGK_UNDERDOT) == HGK_UNDERDOT {
-                        s.push('\u{0323}');
-                    }
-                }
-                else {
-                    s.remove(0);
-                    s[0] = get_precomposed(self.letter, HGK_MACRON);
-                }
-                s.into_iter().collect::<String>()  
-            }
+            HgkUnicodeMode::CombiningOnly =>
+                get_composing_chars(self.letter, self.diacritics).into_iter().collect::<String>(),
+            HgkUnicodeMode::PrecomposedPUA =>
+                get_pua_string(self.letter, self.diacritics),
+            HgkUnicodeMode::Precomposed => 
+                get_precomposed_string(self.letter, self.diacritics),
         }  
     }
 
@@ -952,6 +951,7 @@ pub fn hgk_transliterate(input:usize) -> char {
 mod tests {
     use super::*;
     use unicode_normalization::char::compose;
+    use unicode_normalization::UnicodeNormalization;
     use alloc::vec::Vec;
     use csv;
     use std::error::Error;

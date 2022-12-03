@@ -20,9 +20,13 @@ edition = "2021"
 doctest = false # don't run Doc-tests for now
 
 [dependencies]
-unicode-normalization = { version = "0.1.22", default-features = false }
+unicode-normalization = { version = "0.1.22", default-features = false, optional = true }
+
+[features]
+default = ["unicode-normalization"]
 
 [dev-dependencies]
+unicode-normalization = { version = "0.1.22", default-features = false }
 csv = "1.1.6"
 hex = "0.4.3"
 
