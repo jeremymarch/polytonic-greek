@@ -955,21 +955,21 @@ mod tests {
     use unicode_normalization::UnicodeNormalization;
     use alloc::vec::Vec;
     use csv;
-    use std::error::Error;
-    use std::path::Path;
+    use core::primitive::char;
 
-    fn do_csv_test() -> Result<(), Box<dyn Error>> {
+    #[test]
+    fn csv_test() {
         //println!("{:?}", env::current_dir().unwrap());
         let csvfile = "gktest.csv";
-        if !Path::new(csvfile).is_file() {
-            Err("CSV tests file does not exist")? //or: return Err("Bad request".into());
-        }
+        // if !Path::new(csvfile).is_file() {
+        //     Err("CSV tests file does not exist")? //or: return Err("Bad request".into());
+        // }
 
-        let mut rdr = csv::Reader::from_path(csvfile)?; //Reader::from_reader(io::stdin());
+        let mut rdr = csv::Reader::from_path(csvfile).unwrap(); //Reader::from_reader(io::stdin());
         let mut line_number = 2; //start on line 2 because header row
         for result in rdr.records() {
             // The iterator yields Result<StringRecord, Error>, so we check the error here.
-            let record = result?;
+            let record = result.unwrap();
 
             let diacritic = match record[1].trim() {
                 //"none" => HGK_NO_DIACRITICS,
@@ -1013,8 +1013,6 @@ mod tests {
             }
             line_number += 1;
         }
-
-        Ok(())
     }
 
     //make string from utf16 hex codepoints
@@ -1072,14 +1070,6 @@ mod tests {
         let mut v = vec!["βββ", "ααα", "ααβ,ωωω", "\u{EB07}αβα", "αα ωωω"];
         v.sort_by(|a, b| hgk_compare_sqlite(a, b));
         assert_eq!(v, vec!["αα ωωω", "ααα", "ααβ,ωωω", "\u{EB07}αβα", "βββ"]);
-    }
-
-    #[test]
-    fn csv_tests() {
-        match do_csv_test() {
-            Ok(()) => (),
-            Err(error) => panic!("Error: {:?}", error)
-        };
     }
 
     #[test]
@@ -1248,11 +1238,11 @@ mod tests {
     #[test]
     fn convert_tests() {
         for l in 0x0370..0x03FF {
-            let letter = std::char::from_u32(l).unwrap().to_string();
+            let letter = char::from_u32(l).unwrap().to_string();
 
             let a = letter.nfd().collect::<String>();
             let b = a.nfc().collect::<String>();
-            println!("{:X}, {}, {}, {}", l, letter, a, b);
+            //println!("{:X}, {}, {}, {}", l, letter, a, b);
 
             //where the round trip should not be equal
             match l {
@@ -1275,11 +1265,11 @@ mod tests {
         }
 
         for l in 0x1F00..0x1FFF {
-            let letter = std::char::from_u32(l).unwrap().to_string();
+            let letter = char::from_u32(l).unwrap().to_string();
 
             let a = letter.nfd().collect::<String>();
             let b = a.nfc().collect::<String>();
-            println!("{:X}, {}, {}, {}", l, letter, a, b);
+            //println!("{:X}, {}, {}, {}", l, letter, a, b);
 
             //where the round trip should not be equal
             match l  {
@@ -1327,7 +1317,7 @@ mod tests {
         }
 
         for l in 0xEAF0..0xEB8A {
-            let letter = std::char::from_u32(l).unwrap().to_string();
+            let letter = char::from_u32(l).unwrap().to_string();
 
             let a = hgk_convert(&letter, HgkUnicodeMode::CombiningOnly);
             let b = hgk_convert(&a, HgkUnicodeMode::PrecomposedPUA);
