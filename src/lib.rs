@@ -954,7 +954,6 @@ mod tests {
     use unicode_normalization::char::compose;
     use unicode_normalization::UnicodeNormalization;
     use alloc::vec::Vec;
-    use csv;
     use core::primitive::char;
 
     #[test]
@@ -1018,7 +1017,7 @@ mod tests {
     //make string from utf16 hex codepoints
     fn hex_to_string(s:&str) -> String {
         //https://stackoverflow.com/questions/3408706/hexadecimal-string-to-byte-array-in-c
-        let b = hex::decode(s.replace(" ", "")).unwrap();
+        let b = hex::decode(s.replace(' ', "")).unwrap();
 
         let res: Vec<u16> = b
         .chunks_exact(2)
@@ -1032,15 +1031,15 @@ mod tests {
     #[test]
     fn test_compare() {
 
-        assert_eq!(hgk_compare_multiple_forms("φέρει , φέρῃ ", "  φέρῃ   ,   φέρει"), true);
-        assert_eq!(hgk_compare_multiple_forms(" φέρει , φέρῃ ", "  φέρει   ,  φέρῃ "), true);
-        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,φέρει"), true);
-        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,"), false);
-        assert_eq!(hgk_compare_multiple_forms("φέρει,", "φέρῃ,φέρει"), false);
-        assert_eq!(hgk_compare_multiple_forms("φέρει", "φέρῃ,φέρει"), false);
-        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,"), false);
-        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ"), false);
-        assert_eq!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρει"), false);
+        assert!(hgk_compare_multiple_forms("φέρει , φέρῃ ", "  φέρῃ   ,   φέρει"));
+        assert!(hgk_compare_multiple_forms(" φέρει , φέρῃ ", "  φέρει   ,  φέρῃ "));
+        assert!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,φέρει"));
+        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,"));
+        assert!(!hgk_compare_multiple_forms("φέρει,", "φέρῃ,φέρει"));
+        assert!(!hgk_compare_multiple_forms("φέρει", "φέρῃ,φέρει"));
+        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,"));
+        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ"));
+        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρει"));
 
         assert_eq!( hgk_compare("α", "α", 0), 0);
         assert_eq!( hgk_compare("α", "Α", 0), 0);
@@ -1111,49 +1110,49 @@ mod tests {
 
     #[test]
     fn vowel_lengths() {
-        assert_eq!('α'.is_long_or_short(), true);
-        assert_eq!('α'.is_long(), false);
-        assert_eq!('α'.is_short(), false);
-        assert_eq!('ε'.is_long_or_short(), false);
-        assert_eq!('ε'.is_long(), false);
-        assert_eq!('ε'.is_short(), true);
-        assert_eq!('η'.is_long_or_short(), false);
-        assert_eq!('η'.is_long(), true);
-        assert_eq!('η'.is_short(), false);
-        assert_eq!('ι'.is_long_or_short(), true);
-        assert_eq!('ι'.is_long(), false);
-        assert_eq!('ι'.is_short(), false);
-        assert_eq!('ο'.is_long_or_short(), false);
-        assert_eq!('ο'.is_long(), false);
-        assert_eq!('ο'.is_short(), true);
-        assert_eq!('υ'.is_long_or_short(), true);
-        assert_eq!('υ'.is_long(), false);
-        assert_eq!('υ'.is_short(), false);
-        assert_eq!('ω'.is_long_or_short(), false);
-        assert_eq!('ω'.is_long(), true);
-        assert_eq!('ω'.is_short(), false);
+        assert!('α'.is_long_or_short());
+        assert!(!'α'.is_long());
+        assert!(!'α'.is_short());
+        assert!(!'ε'.is_long_or_short());
+        assert!(!'ε'.is_long());
+        assert!('ε'.is_short());
+        assert!(!'η'.is_long_or_short());
+        assert!('η'.is_long());
+        assert!(!'η'.is_short());
+        assert!('ι'.is_long_or_short());
+        assert!(!'ι'.is_long());
+        assert!(!'ι'.is_short());
+        assert!(!'ο'.is_long_or_short());
+        assert!(!'ο'.is_long());
+        assert!('ο'.is_short());
+        assert!('υ'.is_long_or_short());
+        assert!(!'υ'.is_long());
+        assert!(!'υ'.is_short());
+        assert!(!'ω'.is_long_or_short());
+        assert!('ω'.is_long());
+        assert!(!'ω'.is_short());
 
-        assert_eq!('Α'.is_long_or_short(), true);
-        assert_eq!('Α'.is_long(), false);
-        assert_eq!('Α'.is_short(), false);
-        assert_eq!('Ε'.is_long_or_short(), false);
-        assert_eq!('Ε'.is_long(), false);
-        assert_eq!('Ε'.is_short(), true);
-        assert_eq!('Η'.is_long_or_short(), false);
-        assert_eq!('Η'.is_long(), true);
-        assert_eq!('Η'.is_short(), false);
-        assert_eq!('Ι'.is_long_or_short(), true);
-        assert_eq!('Ι'.is_long(), false);
-        assert_eq!('Ι'.is_short(), false);
-        assert_eq!('Ο'.is_long_or_short(), false);
-        assert_eq!('Ο'.is_long(), false);
-        assert_eq!('Ο'.is_short(), true);
-        assert_eq!('Υ'.is_long_or_short(), true);
-        assert_eq!('Υ'.is_long(), false);
-        assert_eq!('Υ'.is_short(), false);
-        assert_eq!('Ω'.is_long_or_short(), false);
-        assert_eq!('Ω'.is_long(), true);
-        assert_eq!('Ω'.is_short(), false);
+        assert!('Α'.is_long_or_short());
+        assert!(!'Α'.is_long());
+        assert!(!'Α'.is_short());
+        assert!(!'Ε'.is_long_or_short());
+        assert!(!'Ε'.is_long());
+        assert!('Ε'.is_short());
+        assert!(!'Η'.is_long_or_short());
+        assert!('Η'.is_long());
+        assert!(!'Η'.is_short());
+        assert!('Ι'.is_long_or_short());
+        assert!(!'Ι'.is_long());
+        assert!(!'Ι'.is_short());
+        assert!(!'Ο'.is_long_or_short());
+        assert!(!'Ο'.is_long());
+        assert!('Ο'.is_short());
+        assert!('Υ'.is_long_or_short());
+        assert!(!'Υ'.is_long());
+        assert!(!'Υ'.is_short());
+        assert!(!'Ω'.is_long_or_short());
+        assert!('Ω'.is_long());
+        assert!(!'Ω'.is_short());
     }
 
     #[test]
@@ -1336,13 +1335,13 @@ mod tests {
         assert_eq!( hgk_strip_diacritics("α\u{0304}\u{0313}\u{0301}", 0xFFFFFFFF), "α" );
 
 
-        assert_eq!( hgk_has_diacritics("άῶ", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
-        assert_eq!( hgk_has_diacritics("αῶ", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
-        assert_eq!( hgk_has_diacritics("άω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
-        assert_eq!( hgk_has_diacritics("ἀω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), false);
-        assert_eq!( hgk_has_diacritics("ἄω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
-        assert_eq!( hgk_has_diacritics("ἀώ", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), true);
-        assert_eq!( hgk_has_diacritics("αω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE), false);
+        assert!( hgk_has_diacritics("άῶ", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE));
+        assert!( hgk_has_diacritics("αῶ", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE));
+        assert!( hgk_has_diacritics("άω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE));
+        assert!( !hgk_has_diacritics("ἀω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE));
+        assert!( hgk_has_diacritics("ἄω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE));
+        assert!( hgk_has_diacritics("ἀώ", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE));
+        assert!( !hgk_has_diacritics("αω", HGK_ACUTE | HGK_CIRCUMFLEX | HGK_GRAVE));
         
         assert_eq!( hgk_convert("\u{EB07}", HgkUnicodeMode::CombiningOnly), "α\u{0304}\u{0313}\u{0301}");
         assert_eq!( hgk_convert("α\u{0304}\u{0313}\u{0301}", HgkUnicodeMode::PrecomposedPUA), "\u{EB07}");
