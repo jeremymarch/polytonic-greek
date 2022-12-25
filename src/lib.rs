@@ -1395,6 +1395,11 @@ mod tests {
         assert_eq!(get_pua_index(a1.letter, a1.diacritics), -1);
         assert_eq!(a1.to_string(HgkUnicodeMode::PrecomposedPUA), "\u{1FE1}");
 
+        assert_eq!(hgk_toggle_diacritic_str("ι", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
+        "\u{1FD1}");
+        assert_eq!(hgk_toggle_diacritic_str("ι", HGK_MACRON, false, HgkUnicodeMode::Precomposed), 
+        "\u{1FD1}");
+
         assert_eq!(hgk_toggle_diacritic_str("υ", HGK_MACRON, false, HgkUnicodeMode::PrecomposedPUA), 
             "\u{1FE1}");
 
