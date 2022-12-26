@@ -809,13 +809,14 @@ pub fn hgk_toggle_diacritic_str_end(s:&str, d:u32, on_only:bool, mode:HgkUnicode
     }
 
     len = slen - len;
-    let start:String = s.chars().take(len).collect();
+    let mut start:String = s.chars().take(len).collect();
     let end:String = s.chars().skip(len).collect();
 
     //println!("slen {}, len {}", slen, len);
     let new = hgk_toggle_diacritic_str(&end, d, on_only, mode);
     //println!("{} - {} : {}", start, end, new);
-    format!("{}{}", start, new)
+    start.push_str(&new);
+    start
 }
 
 pub fn hgk_toggle_diacritic_str(l:&str, d:u32, on_only:bool, mode:HgkUnicodeMode) -> String {
