@@ -29,6 +29,7 @@ default = ["unicode-normalization"]
 unicode-normalization = { version = "0.1.22", default-features = false }
 csv = "1.1.6"
 hex = "0.4.3"
+itertools = "0.10.5"
 
 # [dependencies.tinyvec]
 # version = "1"

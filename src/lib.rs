@@ -1,4 +1,4 @@
-#![no_std]
+//#![no_std]
 #![deny(unsafe_code)]
 
 #[macro_use]
@@ -964,6 +964,7 @@ mod tests {
     use unicode_normalization::UnicodeNormalization;
     use alloc::vec::Vec;
     use core::primitive::char;
+    use std::println;
 
     #[test]
     fn csv_test() {
@@ -1021,6 +1022,125 @@ mod tests {
             }
             line_number += 1;
         }
+    }
+
+    fn diacritic_name(a:u32) -> String {
+        let diacritic = match a {
+            //HGK_NO_DIACRITICS => "",
+            HGK_ROUGH => "rough",
+            HGK_SMOOTH => "smooth",
+            HGK_ACUTE => "acute",
+            HGK_GRAVE => "grave",
+            HGK_CIRCUMFLEX => "circumflex",
+            HGK_MACRON => "macron",
+            HGK_BREVE => "breve",
+            HGK_IOTA_SUBSCRIPT => "iotasub",
+            HGK_DIAERESIS => "diaeresis",
+            HGK_UNDERDOT => "underdot",
+            _ => "",
+        };
+        diacritic.to_string()
+    }
+
+    //use itertools::Itertools;
+    #[test]
+    fn loop_test() {
+
+        let vowels = vec!['α'];//,'ε','η','ι','ο','υ','ω','Α','Ε','Η','Ι','Ο','Υ','Ω','Ρ','ρ'];
+
+        //all posible combinations:
+        let diacritics = vec![
+            vec![HGK_NO_DIACRITICS],
+            vec![HGK_ROUGH], 
+            vec![HGK_SMOOTH],
+            vec![HGK_ACUTE], 
+            vec![HGK_GRAVE], 
+            vec![HGK_CIRCUMFLEX], 
+            vec![HGK_MACRON], 
+            vec![HGK_BREVE], 
+            vec![HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_DIAERESIS], 
+            vec![HGK_UNDERDOT],
+
+            vec![HGK_ROUGH, HGK_ACUTE], 
+            vec![HGK_ROUGH, HGK_GRAVE], 
+            vec![HGK_ROUGH, HGK_CIRCUMFLEX], 
+
+            vec![HGK_SMOOTH, HGK_ACUTE], 
+            vec![HGK_SMOOTH, HGK_GRAVE], 
+            vec![HGK_SMOOTH, HGK_CIRCUMFLEX],
+
+            vec![HGK_IOTA_SUBSCRIPT, HGK_ACUTE], 
+            vec![HGK_IOTA_SUBSCRIPT, HGK_GRAVE], 
+            vec![HGK_IOTA_SUBSCRIPT, HGK_CIRCUMFLEX], 
+
+            vec![HGK_SMOOTH, HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_ROUGH, HGK_IOTA_SUBSCRIPT], 
+
+            vec![HGK_SMOOTH, HGK_MACRON], 
+            vec![HGK_ROUGH, HGK_MACRON], 
+
+            vec![HGK_SMOOTH, HGK_BREVE], 
+            vec![HGK_ROUGH, HGK_BREVE], 
+
+            vec![HGK_ACUTE, HGK_MACRON], 
+            vec![HGK_GRAVE, HGK_MACRON], 
+
+            vec![HGK_ACUTE, HGK_BREVE], 
+            vec![HGK_GRAVE, HGK_BREVE], 
+
+            vec![HGK_IOTA_SUBSCRIPT, HGK_BREVE], 
+            vec![HGK_IOTA_SUBSCRIPT, HGK_MACRON], 
+
+            vec![HGK_ACUTE, HGK_DIAERESIS], 
+            vec![HGK_GRAVE, HGK_DIAERESIS], 
+
+            //3
+            vec![HGK_ROUGH, HGK_ACUTE, HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_ROUGH, HGK_GRAVE, HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_ROUGH, HGK_CIRCUMFLEX, HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_SMOOTH, HGK_ACUTE, HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_SMOOTH, HGK_GRAVE, HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_SMOOTH, HGK_CIRCUMFLEX, HGK_IOTA_SUBSCRIPT],
+
+            vec![HGK_ROUGH, HGK_ACUTE, HGK_MACRON], 
+            vec![HGK_ROUGH, HGK_GRAVE, HGK_MACRON],
+            vec![HGK_SMOOTH, HGK_ACUTE, HGK_MACRON], 
+            vec![HGK_SMOOTH, HGK_GRAVE, HGK_MACRON], 
+
+            vec![HGK_ROUGH, HGK_IOTA_SUBSCRIPT, HGK_MACRON], 
+            vec![HGK_SMOOTH, HGK_IOTA_SUBSCRIPT, HGK_MACRON], 
+            vec![HGK_IOTA_SUBSCRIPT, HGK_ACUTE, HGK_MACRON], 
+            vec![HGK_IOTA_SUBSCRIPT, HGK_GRAVE, HGK_MACRON],
+
+            //4
+            vec![HGK_ROUGH, HGK_ACUTE, HGK_MACRON, HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_ROUGH, HGK_GRAVE, HGK_MACRON, HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_SMOOTH, HGK_ACUTE, HGK_MACRON, HGK_IOTA_SUBSCRIPT], 
+            vec![HGK_SMOOTH, HGK_GRAVE, HGK_MACRON, HGK_IOTA_SUBSCRIPT], 
+        ];
+
+        // let diacritics = vec![HGK_NO_DIACRITICS, HGK_ROUGH, HGK_SMOOTH, HGK_ACUTE, HGK_GRAVE, 
+        // HGK_CIRCUMFLEX, HGK_MACRON, HGK_BREVE, HGK_IOTA_SUBSCRIPT, HGK_DIAERESIS, HGK_UNDERDOT];
+
+        for c in vowels {
+            for d_combo in &diacritics {
+                let mut st = c.to_string();
+                for d in d_combo.iter() {
+                    st = hgk_toggle_diacritic_str_end(&st, *d, false, HgkUnicodeMode::Precomposed);
+                }
+                println!("{:?} {} {}", d_combo, st, string_to_hex(&st));
+            }
+        }
+    }
+
+    fn string_to_hex(str:&str) -> String {
+        // hex::encode( str.encode_utf16().collect::<String>() )
+        let mut a = String::from("");
+        for c in str.chars() {
+            a.push_str( &format!("{:04X} ", c as u32));
+        }
+        a.trim().to_string()
     }
 
     //make string from utf16 hex codepoints
