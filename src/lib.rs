@@ -894,11 +894,7 @@ pub fn hgk_compare_multiple_forms(str1: &str, str2: &str) -> bool {
                 break;
             }
         }
-        if all_found {
-            is_correct = true;
-        } else {
-            is_correct = false;
-        }
+        is_correct = all_found;
     }
     is_correct
 }
