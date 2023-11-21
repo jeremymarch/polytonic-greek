@@ -873,10 +873,50 @@ pub fn hgk_compare_sqlite(s1: &str, s2: &str) -> Ordering {
     }
 }
 
-pub fn hgk_compare_multiple_forms(str1: &str, str2: &str) -> bool {
+// fn compare_strings_ignore_duplicates(str1: &str, str2: &str) -> bool {
+//     // Split input strings into vectors of unique elements
+//     let vec1: Vec<&str> = str1.split(',').map(|s| s.trim()).collect();
+//     let vec2: Vec<&str> = str2.split(',').map(|s| s.trim()).collect();
+
+//     // Convert vectors to sets to eliminate duplicates
+//     let set1: std::collections::HashSet<_> = vec1.into_iter().collect();
+//     let set2: std::collections::HashSet<_> = vec2.into_iter().collect();
+
+//     // Check if sets are equal
+//     set1 == set2
+// }
+
+// if multiple forms and two or more forms are the same
+// only need to match once
+// ἐνέγκω, ἐνέγκω == ἐνέγκω, ἐνέγκω
+// ἐνέγκω == ἐνέγκω, ἐνέγκω
+// ἐνέγκω, ἐνέγxxx != ἐνέγκω, ἐνέγκω
+// abc, def, def == abc, def, def
+// abc, def == abc, def, def
+pub fn hgk_compare_multiple_forms(str1: &str, str2: &str, ignore_duplicates: bool) -> bool {
+    //we have to normalize the strings here,
+    //otherwise HashSet might not remove duplicates properly
+    let str1_norm = hgk_convert(str1, HgkUnicodeMode::CombiningOnly);
+    let str2_norm = hgk_convert(str2, HgkUnicodeMode::CombiningOnly);
+
     let is_correct;
-    let s1 = str1.split(',').collect::<Vec<&str>>();
-    let s2 = str2.split(',').collect::<Vec<&str>>();
+    let mut s1: Vec<&str> = str1_norm.split(',').map(|s| s.trim()).collect();
+    let mut s2: Vec<&str> = str2_norm.split(',').map(|s| s.trim()).collect();
+
+    //strip duplicate forms from vectors
+    if ignore_duplicates {
+        s1 = s1
+            .into_iter()
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<&str>>();
+        s2 = s2
+            .into_iter()
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<&str>>();
+    }
+
     if s1.len() != s2.len() {
         is_correct = false;
     } else {
@@ -884,7 +924,7 @@ pub fn hgk_compare_multiple_forms(str1: &str, str2: &str) -> bool {
         for a in s1 {
             let mut found = false;
             for b in &s2 {
-                if hgk_compare(a.trim(), b.trim(), 0) == 0 {
+                if hgk_compare(a, b, 0) == 0 {
                     found = true;
                     break;
                 }
@@ -1201,21 +1241,69 @@ mod tests {
 
     #[test]
     fn test_compare() {
+        assert!(hgk_compare_multiple_forms("ἐνέγκω", "ἐνέγκω", false));
+        assert!(!hgk_compare_multiple_forms(
+            "ἐνέγκω",
+            "ἐνέγκω, ἐνέγκω",
+            false
+        ));
+        assert!(hgk_compare_multiple_forms(
+            "ἐνέγκω",
+            "ἐνέγκω, ἐνε\u{0301}γκω",
+            true
+        )); //string will be normalized, so counts as a duplicate
+        assert!(hgk_compare_multiple_forms(
+            "ἐνέγκω, ἐνέγκω",
+            "ἐνέγκω, ἐνέγκω",
+            true
+        ));
+        assert!(hgk_compare_multiple_forms(
+            "ἐνέγκω, ἐνέγκω",
+            "ἐνέγκω, ἐνέγκω",
+            false
+        ));
+        assert!(hgk_compare_multiple_forms("ἐνέγκω", "ἐνέγκω, ἐνέγκω", true));
+        assert!(!hgk_compare_multiple_forms("", "ἐνέγκω", true));
+
+        assert!(hgk_compare_multiple_forms(
+            " \r\n φέρει",
+            "  φέρει  \r\n",
+            true
+        ));
+        assert!(!hgk_compare_multiple_forms("φέρει", "φερε", true));
+        assert!(hgk_compare_multiple_forms(
+            "φέρει,φέρῃ",
+            "φέρῃ,φέρει,  φέρει",
+            true
+        ));
+        assert!(!hgk_compare_multiple_forms(
+            "φέρει,φέρῃ",
+            "φέρῃ,φέρει,  φέρει",
+            false
+        ));
+        assert!(!hgk_compare_multiple_forms(
+            "φέρει",
+            "φέρῃ,  φέρει,φέρει",
+            true
+        ));
+
         assert!(hgk_compare_multiple_forms(
             "φέρει , φέρῃ ",
-            "  φέρῃ   ,   φέρει"
+            "  φέρῃ   ,   φέρει",
+            true
         ));
         assert!(hgk_compare_multiple_forms(
             " φέρει , φέρῃ ",
-            "  φέρει   ,  φέρῃ "
+            "  φέρει   ,  φέρῃ ",
+            true
         ));
-        assert!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,φέρει"));
-        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,"));
-        assert!(!hgk_compare_multiple_forms("φέρει,", "φέρῃ,φέρει"));
-        assert!(!hgk_compare_multiple_forms("φέρει", "φέρῃ,φέρει"));
-        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,"));
-        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ"));
-        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρει"));
+        assert!(hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,φέρει", true));
+        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,", true));
+        assert!(!hgk_compare_multiple_forms("φέρει,", "φέρῃ,φέρει", true));
+        assert!(!hgk_compare_multiple_forms("φέρει", "φέρῃ,φέρει", true));
+        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ,", true));
+        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρῃ", true));
+        assert!(!hgk_compare_multiple_forms("φέρει,φέρῃ", "φέρει", true));
 
         assert_eq!(hgk_compare("α", "α", 0), 0);
         assert_eq!(hgk_compare("α", "Α", 0), 0);
