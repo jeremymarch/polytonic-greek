@@ -20,7 +20,7 @@ edition = "2021"
 doctest = false # don't run Doc-tests for now
 
 [dependencies]
-unicode-normalization = { version = "0.1.23", default-features = false, optional = true }
+unicode-normalization = { version = "0.1.22", default-features = false, optional = true }
 
 [features]
 default = ["unicode-normalization"]
